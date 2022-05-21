@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
-import 'package:massage_o2o_app_repository_module/service_changed_type_enum.dart';
+import 'package:massage_o2o_app_repository_module/src/service_changed_type_enum.dart';
 import 'package:tuple/tuple.dart';
 
 import 'const_names.dart';

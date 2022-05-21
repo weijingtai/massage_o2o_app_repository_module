@@ -1,4 +1,3 @@
-
 enum ServiceChangedTypeEnum {
   ADDED,
   CHANGED,

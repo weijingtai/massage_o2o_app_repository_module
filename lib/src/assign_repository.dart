@@ -6,7 +6,7 @@ import 'const_names.dart';
 class AssignRepository {
   AssignRepository();
 
-  CollectionReference orderCollection = FirebaseFirestore.instance.collection(ORDER_COLLECTION_NAME);
+  CollectionReference orderCollection = FirebaseFirestore.instance.collection(ASSIGN_COLLECTION_NAME);
   /// add each assign '/Order/<CURRENT_LOGGED_IN_HOST_UID>/<PREPARING_COLLECTION_NAME>/<ORDER_GUID>/assigns/<ASSIGN_GUID>'
   Future<void> _remoteCreateAssigns(OrderModel order,List<AssignModel> assignList){
     var orderDocumentRef = orderCollection.doc(order.hostUid).collection(ORDER_COLLECTION_NAME_PREPARING).doc(order.guid);

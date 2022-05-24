@@ -17,14 +17,18 @@ dependencies:
   massage_o2o_app_models_module:
     git:
       url: https://github.com/weijingtai/massage_o2o_app_models_module.git
-      ref: release # branch name
+      ref: dev # dev branch
+#      ref: release # branch name
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  mockito: 5.2.0
+  build_runner: ^2.1.11
   flutter_lints: ^2.0.0
   fake_cloud_firestore: ^1.2.2
+  uuid: ^3.0.6
 
 
 

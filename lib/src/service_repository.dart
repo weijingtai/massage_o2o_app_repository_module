@@ -132,7 +132,7 @@ class ServiceRepository {
   }
 
   Future<void> updateService(ServiceModel service) async {
-    logger.i("updateService: service:${service.guid} assign:${service.assign}");
+    logger.i("updateService: service:${service.guid}");
     logger.v(service.toJson());
     await serviceCollection
         .doc(service.guid)

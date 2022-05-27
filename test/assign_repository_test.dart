@@ -1,14 +1,39 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:massage_o2o_app_models_module/enums.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
 import 'package:massage_o2o_app_repository_module/repository.dart';
+import 'package:massage_o2o_app_repository_module/src/config/repository_config.dart';
 import 'package:massage_o2o_app_repository_module/src/const_names.dart';
 import 'package:uuid/uuid.dart';
 
+import 'test_utils.dart';
+
 Future<void> main() async {
+  // final FirebaseApp app = await Firebase.initializeApp(name: 'test',
+  //     options: const FirebaseOptions(
+  //         apiKey: "AIzaSyChrR4o7EbNbgwHQvDj6m1l_o_V-ziJSwE",
+  //         authDomain: "massage-o2o-dev.firebaseapp.com",
+  //         databaseURL: "https://massage-o2o-dev-default-rtdb.firebaseio.com",
+  //         projectId: "massage-o2o-dev",
+  //         storageBucket: "massage-o2o-dev.appspot.com",
+  //         messagingSenderId: "29898572537",
+  //         appId: "1:29898572537:web:6fe86830dd91e9dd981828",
+  //         measurementId: "G-0F4WQBS14X"
+  //     ));
+  // FirebaseFirestore firebaseFirestore = FirebaseFirestore.instanceFor(app:app);
+  // firebaseFirestore.useFirestoreEmulator("192.168.0.64", 8080);
+  // var remoteAssignRepository = AssignRepository(firebaseFirestore);
+  // WidgetsFlutterBinding.ensureInitialized();
+
+  var repositoryConfig = await loadRepositoryConfig();
   final fakeFirestore = FakeFirebaseFirestore();
-  var testAssignRepository = AssignRepository(fakeFirestore);
+  String ASSIGN_COLLECTION_NAME = repositoryConfig.assignRepositoryConfig.collectionName;
+  var testAssignRepository = AssignRepository(firestore: fakeFirestore, repositoryConfig: repositoryConfig);
 
   group("test get", () {
     test("test get",()async{
@@ -70,7 +95,8 @@ Future<void> main() async {
 
       // real test
       var newAssignModel = oldAssignModel;
-      newAssignModel.state=AssignStateEnum.Assigning;
+      // newAssignModel.state=AssignStateEnum.Assigning;
+      newAssignModel.assign();
       await testAssignRepository.update(newAssignModel);
       var newQuerySnapshot = await fakeFirestore
           .collection(ASSIGN_COLLECTION_NAME)
@@ -147,8 +173,8 @@ Future<void> main() async {
       expect(newData["state"], AssignStateEnum.Assigning.name);
 
     });
-    test("test updateAssignListFields with 9",()async{
-      var oldAssignList = List.generate(9, (index) => generateAssignModel());
+    test("test updateAssignListFields with 10",()async{
+      var oldAssignList = List.generate(10, (index) => generateAssignModel());
       await testAssignRepository.addAll(oldAssignList);
 
       var deliveredAt = DateTime.now();
@@ -167,8 +193,8 @@ Future<void> main() async {
       });
 
     });
-    test("test updateAssignListFields with 10",()async{
-      var oldAssignList = List.generate(10, (index) => generateAssignModel());
+    test("test updateAssignListFields with 11",()async{
+      var oldAssignList = List.generate(11, (index) => generateAssignModel());
       await testAssignRepository.addAll(oldAssignList);
 
       var deliveredAt = DateTime.now();
@@ -264,7 +290,7 @@ Future<void> main() async {
     });
   });
 
-  group("test listAllByMasterUid",(){
+  group("test listAllByMasterUid",() {
     test("normal without param after",()async{
       var newAssignModelList = List.generate(2, (index) => generateAssignModel());
       // update createdAt
@@ -277,7 +303,8 @@ Future<void> main() async {
       expect(result.length, 2);
     });
     test("normal with param after as now",()async{
-      var newAssignModelList = List.generate(2, (index) => generateAssignModel());
+      var newAssignModelList = List.generate(
+          2, (index) => generateAssignModel());
       // update createdAt
       var masterUid = Uuid().v4();
       var now = DateTime.now();
@@ -286,28 +313,12 @@ Future<void> main() async {
       newAssignModelList.last.masterUid = masterUid;
       newAssignModelList.last.createdAt = now;
       await testAssignRepository.addAll(newAssignModelList);
-      var firstAssignInDB = await fakeFirestore.collection(ASSIGN_COLLECTION_NAME).doc(newAssignModelList.first.guid).get();
-      // expect((firstAssignInDB.data() as Map<String,dynamic>)["createdAt"], "");
-      var result = await testAssignRepository.listAllByMasterUid(masterUid,after: now.subtract(Duration(seconds: 5)));
+      var firstAssignInDB = await fakeFirestore.collection(
+          ASSIGN_COLLECTION_NAME).doc(newAssignModelList.first.guid).get();
+      var result = await testAssignRepository.listAllByMasterUid(
+          masterUid, start: now.subtract(Duration(seconds: 5)));
       expect(result.length, 1);
     });
+    // },skip: "error: type 'Timestamp' is not a subtype of type 'String' of 'other'");
   });
-}
-AssignModel generateAssignModel() {
-  var assignGuid = Uuid().v4();
-  var masterUid = Uuid().v4();
-  var orderGuid = Uuid().v4();
-  var serviceGuid = Uuid().v4();
-  var hostUid = Uuid().v4();
-  var newAssignModel = AssignModel(assignGuid,
-      masterUid: masterUid,
-      serviceGuid: serviceGuid,
-      orderGuid: orderGuid,
-      hostUid: hostUid,
-      assignTimeoutSeconds: 90,
-      deliverTimeoutSeconds: 30,
-      currentOrderStatus: OrderStatusEnum.Creating,
-      senderUid: assignGuid,
-      createdAt: DateTime.now());
-  return newAssignModel;
 }

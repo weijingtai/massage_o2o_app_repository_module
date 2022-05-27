@@ -1,0 +1,23 @@
+{
+  "whereInLimit": 10,
+  "serviceRepositoryConfig": {
+    "collectionName": "Service",
+    "masterUidFieldName": "masterUid",
+    "orderGuidFieldName": "orderGuid",
+    "hostUidFieldName": "hostUid",
+    "assignGuidFieldName": "assignGuid",
+    "serviceGuidFieldName": "guid"
+  },
+  "assignRepositoryConfig": {
+    "collectionName": "Assign",
+    "masterUidFieldName": "masterUid",
+    "orderGuidFieldName": "orderGuid",
+    "hostUidFieldName": "hostUid",
+    "assignGuidFieldName": "guid",
+    "serviceGuidFieldName": "serviceGuid",
+    "createdAtFieldName": "createdAt",
+    "timeoutAtFieldName": "timeoutAt",
+    "assignAtFieldName": "assignAt",
+    "assignStateFieldName": "state"
+  }
+}

@@ -2,16 +2,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
+import 'package:quiver/iterables.dart';
+import 'config/repository_config.dart';
+import 'config/service_repository_config.dart';
 import 'const_names.dart';
 
 class ServiceRepository {
   static Logger logger = Logger();
   // CollectionReference orderCollection = FirebaseFirestore.instance.collection(ACTIVATED_ORDER_COLLECTION_NAME);
   // Query serviceCollectionGroup = FirebaseFirestore.instance.collectionGroup(SERVICES_COLLECTION_NAME);
-  CollectionReference serviceCollection = FirebaseFirestore.instance.collection(SERVICE_COLLECTION_NAME);
+
+  // CollectionReference get serviceCollection => firestore.collection(SERVICES_COLLECTION_NAME);
+  // CollectionReference serviceCollection = firestore.collection(SERVICE_COLLECTION_NAME);
+  CollectionReference _serviceCollection ;
+  FirebaseFirestore firestore;
+  RepositoryConfig repositoryConfig;
+  ServiceRepositoryConfig get config => repositoryConfig.serviceRepositoryConfig;
 
   // CollectionReference orderCollection = FirebaseFirestore.instance.collection(ORDER_COLLECTION_NAME);
-  ServiceRepository();
+  ServiceRepository({
+    required this.firestore,
+    required this.repositoryConfig
+}):_serviceCollection = firestore.collection(repositoryConfig.serviceRepositoryConfig.collectionName);
 
   Future<void> addAll(List<ServiceModel> serviceList) async {
     if (serviceList.isEmpty){
@@ -30,13 +42,13 @@ class ServiceRepository {
   }
   Future<void> _remoteCreateServices(String orderGuid,List<ServiceModel> services){
     // add each service /Service/<SERVICE_GUID>
-    List<Future<dynamic>> addToRemoteFutureList = services.map((s)=>serviceCollection.doc(s.guid).set(s.toJson())).toList();
+    List<Future<dynamic>> addToRemoteFutureList = services.map((s)=>_serviceCollection.doc(s.guid).set(s.toJson())).toList();
     return Future.wait(addToRemoteFutureList);
   }
   Future<void> deleteAllByOrderGuid(String orderGuid) async {
 
     // remove from /Service/<SERVICE_GUID>
-    var querySnapshot = await serviceCollection.where("orderGuid",isEqualTo: orderGuid).get();
+    var querySnapshot = await _serviceCollection.where("orderGuid",isEqualTo: orderGuid).get();
     if (querySnapshot.size > 0 ){
       logger.d("deleteServiceListByOrderGuid: orderGuid: $orderGuid,total:${querySnapshot.docs.length}.");
       List<Future<dynamic>> deleteFromRemoteFutureList = querySnapshot.docs.map((doc) => doc.reference.delete()).toList();
@@ -48,20 +60,20 @@ class ServiceRepository {
   }
   Future<void> deleteByGuidList(List<String> serviceGuidList) async {
     logger.i("deleteServiceByGuidList: for serviceGuidList: ${serviceGuidList.length}");
-    // when serviceList is not null or empty, and length is greater than 9
-    // split the list into chunks of 9,
+    // when serviceList is not null or empty, and length is greater than
+    // split the list into chunks of ,
     // delete each chunk
     if (serviceGuidList.isNotEmpty) {
-      if (serviceGuidList.length > 9) {
-        List<List<String>> chunks = List.generate(serviceGuidList.length ~/ 9, (i) => serviceGuidList.sublist(i * 9, i * 9 + 9));
+      if (serviceGuidList.length > repositoryConfig.whereInLimit) {
+        Iterable<List<String>> chunks = partition(serviceGuidList, repositoryConfig.whereInLimit);
         // var getFuture = chunks.map((e) => serviceCollectionGroup.where("guid", whereIn: serviceGuidList).get()).toList();
         // var result = await Future.wait(getFuture);
         // result.expand((element) => element.docs).forEach((e) => e.reference.delete());
-        var getFuture = chunks.map((e) => serviceCollection.where("guid", whereIn: serviceGuidList).get()).toList();
+        var getFuture = chunks.map((e) => _serviceCollection.where(config.serviceGuidFieldName, whereIn: serviceGuidList).get()).toList();
         var result = await Future.wait(getFuture);
         result.expand((element) => element.docs).forEach((e) => e.reference.delete());
       }else{
-        QuerySnapshot querySnapshot = await serviceCollection
+        QuerySnapshot querySnapshot = await _serviceCollection
             .where("guid", whereIn: serviceGuidList)
             .get();
         for (var e in querySnapshot.docs) {
@@ -74,7 +86,7 @@ class ServiceRepository {
   }
 
   Future<ServiceModel?> load(String serviceGuid) async {
-    var docSnap = await serviceCollection.doc(serviceGuid).get();
+    var docSnap = await _serviceCollection.doc(serviceGuid).get();
     if (docSnap.exists) {
       return ServiceModel.fromJson(docSnap.data() as Map<String, dynamic>);
     }
@@ -84,24 +96,22 @@ class ServiceRepository {
     logger.i("loadAllByOrderGuid: for total: ${orderGuidList.length} orders,");
     if (orderGuidList.isNotEmpty) {
       List<ServiceModel> serviceList = [];
-      if (orderGuidList.length <= 9){
-        QuerySnapshot querySnapshot = await serviceCollection
-            .where("orderGuid", whereIn: orderGuidList)
+      if (orderGuidList.length <= repositoryConfig.whereInLimit){
+        QuerySnapshot querySnapshot = await _serviceCollection
+            .where(config.orderGuidFieldName, whereIn: orderGuidList)
             .get();
         serviceList = querySnapshot.docs.where((e) => e.exists).map((e) => ServiceModel.fromJson((e.data()! as Map<String,dynamic>))).toList();
       }else{
-        // split orderGuidList into chunks of 9
-        List<List<String>> orderGuidListChunks = List.generate(orderGuidList.length~/9, (index) => orderGuidList.sublist(index*9, (index+1)*9));
+        // split orderGuidList into chunks of
+        // List<List<String>> orderGuidListChunks = List.generate(orderGuidList.length~/, (index) => orderGuidList.sublist(index*9, (index+1)*9));
+        Iterable<List<String>> orderGuidListChunks = partition(orderGuidList,repositoryConfig.whereInLimit);
         // generate future querySnapshot for each chunk
         // List<Future<QuerySnapshot>> querySnapshotList = orderGuidListChunks.map((e) => serviceCollectionGroup
         //     .where("orderGuid", whereIn: e)
         //     .get())
         //     .toList();
-        List<Future<QuerySnapshot>> querySnapshotList = orderGuidListChunks
-            .map((e) => serviceCollection
-            .where("orderGuid", whereIn: e)
-            .get())
-            .toList();
+        Iterable<Future<QuerySnapshot>> querySnapshotList = orderGuidListChunks
+            .map((e) => _serviceCollection.where(config.orderGuidFieldName, whereIn: e).get());
         var allResult = await Future.wait(querySnapshotList);
         // flatmap  all result to serviceList
         serviceList = allResult.map((e) => e.docs).expand((e) => e).where((e) => e.exists).map((e) => ServiceModel.fromJson((e.data()! as Map<String,dynamic>))).toList();
@@ -119,7 +129,7 @@ class ServiceRepository {
     //     .where("orderGuid", isEqualTo: orderGuid)
     //     .get();
     // DocumentReference reference = serviceCollection.doc(orderGuid);
-    QuerySnapshot snapshot = await serviceCollection.where("serviceList",isEqualTo: orderGuid).get();
+    QuerySnapshot snapshot = await _serviceCollection.where(config.orderGuidFieldName,isEqualTo: orderGuid).get();
     if (snapshot.docs.isNotEmpty){
       List<ServiceModel> serviceList = snapshot.docs.where((e) => e.exists).map((e) => ServiceModel.fromJson((e.data()! as Map<String,dynamic>))).toList();
       if (serviceList.isNotEmpty){
@@ -134,31 +144,31 @@ class ServiceRepository {
   Future<void> updateService(ServiceModel service) async {
     logger.i("updateService: service:${service.guid}");
     logger.v(service.toJson());
-    await serviceCollection
+    await _serviceCollection
         .doc(service.guid)
         .set(service.toJson(), SetOptions(merge: true));
   }
   Future<void> updateServiceWithField(String serviceGuid, Map<String,dynamic> updatedField) async {
     logger.i("updateServiceWithField: service:$serviceGuid, updatedField:$updatedField");
-    await serviceCollection
+    await _serviceCollection
         .doc(serviceGuid)
         .update(updatedField);
         // .set(updatedField, SetOptions(merge: true)); // merge: true will update the field, not replace it
         // warming: 'set' is not accepting '<childName>.<childFiledName>'
   }
+  @deprecated
   Future<void> deleteAssign(String serviceGuid) async {
     logger.i("updateService: service:$serviceGuid");
-    await serviceCollection
+    await _serviceCollection
         .doc(serviceGuid)
         .update({"assign": FieldValue.delete(),"masterUid":FieldValue.delete()});
   }
 
   Future<void> updateServiceList(List<ServiceModel> newServiceList) async {
     // split newServiceList by orderGuid
-
     logger.i("updateAssignState: total:${newServiceList.length} new service list");
     if (newServiceList.isNotEmpty){
-      await Future.wait(newServiceList.map((e) => serviceCollection.doc(e.guid).update(e.toJson())).toList());
+      await Future.wait(newServiceList.map((e) => _serviceCollection.doc(e.guid).update(e.toJson())).toList());
     }else{
       logger.w("updateAssignState: newServiceList is empty");
     }

@@ -3,9 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
 import 'package:quiver/iterables.dart';
-import 'config/repository_config.dart';
-import 'config/service_repository_config.dart';
-import 'const_names.dart';
+import '../config/repository_config.dart';
+import '../config/service_repository_config.dart';
+import '../const_names.dart';
 
 class ServiceRepository {
   static Logger logger = Logger();

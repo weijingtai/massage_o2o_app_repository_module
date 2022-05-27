@@ -15,7 +15,7 @@ import '../config/assign_repository_config.dart';
 import '../config/repository_config.dart';
 import '../const_names.dart';
 import '../converters/assign_model_converter.dart';
-import '../enums.dart';
+import '../enums/assign_model_change_type_enum.dart';
 
 class AssignMonitoringRepository {
   static Logger logger = Logger(

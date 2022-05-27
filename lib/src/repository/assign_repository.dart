@@ -9,9 +9,9 @@ import 'package:massage_o2o_app_models_module/models.dart';
 import 'package:massage_o2o_app_repository_module/src/config/repository_config.dart';
 import 'package:quiver/iterables.dart';
 
-import 'config/assign_repository_config.dart';
-import 'const_names.dart';
-import 'converters/assign_model_converter.dart';
+import '../config/assign_repository_config.dart';
+import '../const_names.dart';
+import '../converters/assign_model_converter.dart';
 
 class AssignRepository {
 

@@ -8,8 +8,8 @@ import 'package:massage_o2o_app_models_module/enums.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
 import 'package:tuple/tuple.dart';
 
-import 'const_names.dart';
-import 'order_list_updated_type_enum.dart';
+import '../const_names.dart';
+import '../enums/order_list_updated_type_enum.dart';
 
 class OrderRepository{
   static var logger = Logger();

@@ -6,7 +6,7 @@ import 'package:massage_o2o_app_models_module/enums.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
 import 'package:massage_o2o_app_repository_module/monitoring.dart';
 import 'package:massage_o2o_app_repository_module/repository.dart';
-import 'package:massage_o2o_app_repository_module/src/enums.dart';
+import 'package:massage_o2o_app_repository_module/src/enums/assign_model_change_type_enum.dart';
 import 'package:quiver/testing/src/time/time.dart';
 import 'package:quiver/time.dart';
 import 'package:uuid/uuid.dart';

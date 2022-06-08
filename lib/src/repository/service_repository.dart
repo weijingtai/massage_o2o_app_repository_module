@@ -25,6 +25,13 @@ class ServiceRepository {
     required this.repositoryConfig
 }):_serviceCollection = firestore.collection(repositoryConfig.serviceRepositoryConfig.collectionName);
 
+  Future<void> add(ServiceModel service) async{
+    logger.i("add service.");
+    logger.v(service.toJson());
+    await _serviceCollection.doc(service.guid).set(service.toJson());
+    logger.i("add service done.");
+    return ;
+  }
   Future<void> addAll(List<ServiceModel> serviceList) async {
     if (serviceList.isEmpty){
       logger.w("addAll serviceList is empty");

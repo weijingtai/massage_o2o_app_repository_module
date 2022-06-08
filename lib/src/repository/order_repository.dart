@@ -470,13 +470,29 @@ class OrderRepository{
   }
   Future<void> update(String hostUid,String orderGuid,Map<String,dynamic> updateField,{bool isActivated = true}) async{
     logger.i("update order:$orderGuid with $updateField, isActivated:$isActivated");
+    // await orderCollection
+    //     .doc(hostUid)
+    //     .collection(isActivated?ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED:ACTIVATED_ORDER_COLLECTION_NAME_ARCHIVED)
+    //     .doc(orderGuid)
+    //     .set(updateField,SetOptions(merge: true));
+
+
+    // check updateField contains 'lastModifiedAt' is not add DateTime.now() with toISOString() to updateField
+    if (updateField.containsKey("lastModifiedAt")){
+      updateField["lastModifiedAt"] = DateTime.now().toIso8601String();
+    }
     await orderCollection
         .doc(hostUid)
         .collection(isActivated?ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED:ACTIVATED_ORDER_COLLECTION_NAME_ARCHIVED)
         .doc(orderGuid)
-        .set(updateField,SetOptions(merge: true));
+        .update(updateField);
+        // .set(updateField,SetOptions(merge: true));
+
   }
   Future<bool> updateByOrder(OrderModel order) async {
+    // check order lastModifiedAt is not null
+    // if it is null, then update it with DateTime.now().toIso8601String()
+    order.lastModifiedAt ??= DateTime.now();
     var collectionName = _getCollectionNameByOrderState(order.status);
     if (collectionName == null){
       logger.w("update order:${order.guid} with ${order.status} but collection name is null.");

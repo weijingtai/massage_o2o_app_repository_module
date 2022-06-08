@@ -151,12 +151,18 @@ class ServiceRepository {
   Future<void> updateService(ServiceModel service) async {
     logger.i("updateService: service:${service.guid}");
     logger.v(service.toJson());
+    // check service's lastModifiedAt is not null
+    // it is null then add DateTime.now() to it
+    service.lastModifiedAt ??= DateTime.now();
     await _serviceCollection
         .doc(service.guid)
         .set(service.toJson(), SetOptions(merge: true));
   }
   Future<void> updateServiceWithField(String serviceGuid, Map<String,dynamic> updatedField) async {
     logger.i("updateServiceWithField: service:$serviceGuid, updatedField:$updatedField");
+    // check service's lastModifiedAt is not null
+    // it is null then add DateTime.now() to it
+    updatedField["lastModifiedAt"] ??= DateTime.now().toIso8601String();
     await _serviceCollection
         .doc(serviceGuid)
         .update(updatedField);
@@ -175,7 +181,8 @@ class ServiceRepository {
     // split newServiceList by orderGuid
     logger.i("updateAssignState: total:${newServiceList.length} new service list");
     if (newServiceList.isNotEmpty){
-      await Future.wait(newServiceList.map((e) => _serviceCollection.doc(e.guid).update(e.toJson())).toList());
+      var lastModifiedAt = DateTime.now();
+      await Future.wait(newServiceList.map((e)=>e..lastModifiedAt ??= lastModifiedAt).map((e) => _serviceCollection.doc(e.guid).update(e.toJson())).toList());
     }else{
       logger.w("updateAssignState: newServiceList is empty");
     }

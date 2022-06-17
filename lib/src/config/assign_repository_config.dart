@@ -15,6 +15,7 @@ class AssignRepositoryConfig {
   String timeoutAtFieldName;
   String assignAtFieldName;
   String assignStateFieldName;
+  String lastModifiedAtFieldName;
   AssignRepositoryConfig({
     required this.collectionName,
     required this.hostUidFieldName,
@@ -26,6 +27,7 @@ class AssignRepositoryConfig {
     required this.assignAtFieldName,
     required this.timeoutAtFieldName,
     required this.assignStateFieldName,
+    required this.lastModifiedAtFieldName,
 });
   factory AssignRepositoryConfig.fromJson(Map<String, dynamic> json) => _$AssignRepositoryConfigFromJson(json);
   Map<String, dynamic> toJson() => _$AssignRepositoryConfigToJson(this);

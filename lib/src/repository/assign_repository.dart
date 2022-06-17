@@ -134,6 +134,8 @@ class AssignRepository {
     logger.i("update assignGuid:${assign.guid}");
     logger.v(assign.toJson());
     logger.d("try get old assign from remote.");
+    // update assign's lastModifiedAt
+    assign.lastModifiedAt = DateTime.now();
     var querySnapshot = await assignCollection.doc(assign.guid).get();
     if (querySnapshot.exists) {
       logger.v(querySnapshot.data());
@@ -152,6 +154,11 @@ class AssignRepository {
       logger.i("updateFields assignGuid:$assignGuid");
       logger.v(fieldsMap);
       logger.d("try get old assign from remote.");
+      // check fieldsMap contains lastModifiedAt
+      // if not set to DateTime.now()
+      if (!fieldsMap.containsKey(config.lastModifiedAtFieldName)){
+        fieldsMap[config.lastModifiedAtFieldName] = DateTime.now().toIso8601String();
+      }
       var querySnapshot = await assignCollection.doc(assignGuid).get();
       if (querySnapshot.exists) {
         logger.v(querySnapshot.data());
@@ -180,6 +187,11 @@ class AssignRepository {
       logger.i("updateAssignListFields total:${assignGuidList.length}");
       logger.v(fieldsMap);
       logger.v(assignGuidList);
+      // check fieldsMap contains lastModifiedAt
+      // if not set to DateTime.now()
+      if (!fieldsMap.containsKey(config.lastModifiedAtFieldName)){
+        fieldsMap[config.lastModifiedAtFieldName] = DateTime.now().toIso8601String();
+      }
       List<QueryDocumentSnapshot> allAssignData = await _loadByGuids(assignGuidList);
       logger.d("total:${assignGuidList.length} to update, found total:${allAssignData.length} in remote.");
       // check allAssignData is not empty

@@ -19,6 +19,7 @@ AssignRepositoryConfig _$AssignRepositoryConfigFromJson(
       assignAtFieldName: json['assignAtFieldName'] as String,
       timeoutAtFieldName: json['timeoutAtFieldName'] as String,
       assignStateFieldName: json['assignStateFieldName'] as String,
+      lastModifiedAtFieldName: json['lastModifiedAtFieldName'] as String,
     );
 
 Map<String, dynamic> _$AssignRepositoryConfigToJson(
@@ -34,4 +35,5 @@ Map<String, dynamic> _$AssignRepositoryConfigToJson(
       'timeoutAtFieldName': instance.timeoutAtFieldName,
       'assignAtFieldName': instance.assignAtFieldName,
       'assignStateFieldName': instance.assignStateFieldName,
+      'lastModifiedAtFieldName': instance.lastModifiedAtFieldName,
     };

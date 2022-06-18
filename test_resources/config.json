@@ -6,7 +6,8 @@
     "orderGuidFieldName": "orderGuid",
     "hostUidFieldName": "hostUid",
     "assignGuidFieldName": "assignGuid",
-    "serviceGuidFieldName": "guid"
+    "serviceGuidFieldName": "guid",
+    "lastModifiedAtFieldName": "lastModifiedAt"
   },
   "assignRepositoryConfig": {
     "collectionName": "Assign",
@@ -18,6 +19,7 @@
     "createdAtFieldName": "createdAt",
     "timeoutAtFieldName": "timeoutAt",
     "assignAtFieldName": "assignAt",
-    "assignStateFieldName": "state"
+    "assignStateFieldName": "state",
+    "lastModifiedAtFieldName": "lastModifiedAt"
   }
 }

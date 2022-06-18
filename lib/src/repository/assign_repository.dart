@@ -84,10 +84,9 @@ class AssignRepository {
       //         (index) => guids.sublist(index * , min(guids.length, (index + 1) * )));
       Iterable<List<String>> batchGuids = partition(guids, repositoryConfig.whereInLimit);
       // get all reference from remote
-      List<Future<QuerySnapshot>> getRemoteAssignListFutureList = batchGuids
+      Iterable<Future<QuerySnapshot>> getRemoteAssignListFutureList = batchGuids
           .map((assignGuidListChunk) => assignCollection.where(
-          config.assignGuidFieldName, whereIn: assignGuidListChunk).get())
-          .toList();
+          config.assignGuidFieldName, whereIn: assignGuidListChunk).get());
       var queryResultList = await Future.wait(getRemoteAssignListFutureList);
       result = queryResultList.where((e) => e.docs.isNotEmpty).expand((e) => e.docs.where((d) => d.exists)).toList();
     }
@@ -100,7 +99,6 @@ class AssignRepository {
     logger.d("_loadByGuids done with total:${result.length}.");
     logger.v(result);
     return result;
-
   }
   /// add to /Assign/<AssignGuid>
   Future<void> add(AssignModel assign) async {

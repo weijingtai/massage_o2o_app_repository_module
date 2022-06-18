@@ -169,6 +169,80 @@ class ServiceRepository {
         // .set(updatedField, SetOptions(merge: true)); // merge: true will update the field, not replace it
         // warming: 'set' is not accepting '<childName>.<childFiledName>'
   }
+  Future<void> updateServiceListWithField(List<String>  serviceGuids, Map<String,dynamic> updatedField) async {
+    if (serviceGuids.isNotEmpty && updatedField.isNotEmpty) {
+      logger.i("updateAssignListFields total:${serviceGuids.length}");
+      logger.v(updatedField);
+      logger.v(serviceGuids);
+      // check fieldsMap contains lastModifiedAt
+      // if not set to DateTime.now()
+      if (!updatedField.containsKey(config.lastModifiedAtFieldName)){
+        updatedField[config.lastModifiedAtFieldName] = DateTime.now().toIso8601String();
+      }
+      List<QueryDocumentSnapshot> allAssignData = await _loadByGuids(serviceGuids);
+      logger.d("total:${serviceGuids.length} to update, found total:${allAssignData.length} in remote.");
+      // check allAssignData is not empty
+      if (allAssignData.isNotEmpty){
+        // update allAssignData with fieldsMap by reference
+        List<Future<dynamic>> updateRemoteAssignFutureList = allAssignData
+            .map((assignData) => assignData.reference.update(updatedField))
+            .toList();
+        await Future.wait(updateRemoteAssignFutureList);
+
+        // get not found assignGuidList
+        // 1. get all assignGuid from allAssignData
+        // var allAssignGuid = allAssignData.where((e) => e.exists).map((e) => (e.data()! as Map<String,dynamic>)[ASSIGN_GUID_FIELD_NAME]).toList();
+        var allAssignGuid = allAssignData.where((e) => e.exists).map((e) => (e.data()! as AssignModel).guid).toList();
+        // 2. get not found assignGuidList
+        var notFoundAssignGuidList = serviceGuids.where((e) => !allAssignGuid.contains(e)).toList();
+        if (notFoundAssignGuidList.isNotEmpty){
+          logger.d("not found assignGuidList total :${notFoundAssignGuidList.length}");
+          logger.v(notFoundAssignGuidList);
+          return Future.value(notFoundAssignGuidList);
+        }else{
+          logger.i("updateAssignListFields total:${serviceGuids.length} done.");
+          return Future.value([]);
+        }
+      }else{
+        logger.w("not found any assign in remote.");
+        return Future.value(serviceGuids);
+      }
+    }else{
+      if (serviceGuids.isEmpty) {
+        logger.w("updateAssignListFields no assignGuidList to update, param is empty.");
+      }
+      if (updatedField.isEmpty) {
+        logger.w("updateAssignListFields no fields to update, param is empty.");
+      }
+      return null;
+    }
+  }
+
+  Future<List<QueryDocumentSnapshot<Object?>>> _loadByGuids(List<String> guids) async {
+    List<QueryDocumentSnapshot<Object?>> result = [];
+    if (guids.length > repositoryConfig.whereInLimit){
+      logger.d("_loadByGuids assignGuidList is too long, try batch get.");
+      // split assignGuidList to batch get
+      // List<List<String>> batchGuids = List.generate(guids.length ~/  + 1,
+      //         (index) => guids.sublist(index * , min(guids.length, (index + 1) * )));
+      Iterable<List<String>> batchGuids = partition(guids, repositoryConfig.whereInLimit);
+      // get all reference from remote
+      Iterable<Future<QuerySnapshot>> getRemoteAssignListFutureList = batchGuids
+          .map((assignGuidListChunk) => _serviceCollection.where(
+          config.serviceGuidFieldName, whereIn: assignGuidListChunk).get());
+      var queryResultList = await Future.wait(getRemoteAssignListFutureList);
+      result = queryResultList.where((e) => e.docs.isNotEmpty).expand((e) => e.docs.where((d) => d.exists)).toList();
+    }
+    else{
+      // get all reference from remote
+      var queryResult = await _serviceCollection.where(
+          config.serviceGuidFieldName, whereIn: guids).get();
+      result = queryResult.docs.where((e) => e.exists).toList();
+    }
+    logger.d("_loadByGuids done with total:${result.length}.");
+    logger.v(result);
+    return result;
+  }
   @deprecated
   Future<void> deleteAssign(String serviceGuid) async {
     logger.i("updateService: service:$serviceGuid");

@@ -199,10 +199,11 @@ class ServiceRepository {
 
         // get not found assignGuidList
         // 1. get all assignGuid from allAssignData
+
         // var allAssignGuid = allAssignData.where((e) => e.exists).map((e) => (e.data()! as Map<String,dynamic>)[ASSIGN_GUID_FIELD_NAME]).toList();
-        var allAssignGuid = serviceAssignData.where((e) => e.exists).map((e) => (e.data()! as ServiceModel).guid).toList();
+        var allServiceGuid = serviceAssignData.where((e) => e.exists).map((e) => ServiceModel.fromJson(e.data()! as Map<String,dynamic>).guid).toList();
         // 2. get not found assignGuidList
-        var notFoundAssignGuidList = serviceGuids.where((e) => !allAssignGuid.contains(e)).toList();
+        var notFoundAssignGuidList = serviceGuids.where((e) => !allServiceGuid.contains(e)).toList();
         if (notFoundAssignGuidList.isNotEmpty){
           logger.d("not found assignGuidList total :${notFoundAssignGuidList.length}");
           logger.v(notFoundAssignGuidList);

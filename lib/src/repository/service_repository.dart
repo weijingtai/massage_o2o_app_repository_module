@@ -163,28 +163,36 @@ class ServiceRepository {
     // check service's lastModifiedAt is not null
     // it is null then add DateTime.now() to it
     updatedField["lastModifiedAt"] ??= DateTime.now().toIso8601String();
+    if (updatedField.containsValue(null)){
+      updatedField = updatedField.map((k,v) => MapEntry(k, v ?? FieldValue.delete()));
+    }
+    logger.v(updatedField);
     await _serviceCollection
         .doc(serviceGuid)
         .update(updatedField);
         // .set(updatedField, SetOptions(merge: true)); // merge: true will update the field, not replace it
         // warming: 'set' is not accepting '<childName>.<childFiledName>'
   }
-  Future<void> updateServiceListWithField(List<String>  serviceGuids, Map<String,dynamic> updatedField) async {
+  Future<void> updateServiceListWithField(List<String> serviceGuids, Map<String,dynamic> updatedField) async {
     if (serviceGuids.isNotEmpty && updatedField.isNotEmpty) {
       logger.i("updateAssignListFields total:${serviceGuids.length}");
-      logger.v(updatedField);
       logger.v(serviceGuids);
       // check fieldsMap contains lastModifiedAt
       // if not set to DateTime.now()
       if (!updatedField.containsKey(config.lastModifiedAtFieldName)){
         updatedField[config.lastModifiedAtFieldName] = DateTime.now().toIso8601String();
       }
-      List<QueryDocumentSnapshot> allAssignData = await _loadByGuids(serviceGuids);
-      logger.d("total:${serviceGuids.length} to update, found total:${allAssignData.length} in remote.");
+      // check fieldsMap's value is null replace with FirebaseFeilds.Delete;
+      if (updatedField.containsValue(null)){
+        updatedField = updatedField.map((k,v) => MapEntry(k, v ?? FieldValue.delete()));
+      }
+      logger.v(updatedField);
+      List<QueryDocumentSnapshot> serviceAssignData = await _loadByGuids(serviceGuids);
+      logger.d("total:${serviceGuids.length} to update, found total:${serviceAssignData.length} in remote.");
       // check allAssignData is not empty
-      if (allAssignData.isNotEmpty){
+      if (serviceAssignData.isNotEmpty){
         // update allAssignData with fieldsMap by reference
-        List<Future<dynamic>> updateRemoteAssignFutureList = allAssignData
+        List<Future<dynamic>> updateRemoteAssignFutureList = serviceAssignData
             .map((assignData) => assignData.reference.update(updatedField))
             .toList();
         await Future.wait(updateRemoteAssignFutureList);
@@ -192,7 +200,7 @@ class ServiceRepository {
         // get not found assignGuidList
         // 1. get all assignGuid from allAssignData
         // var allAssignGuid = allAssignData.where((e) => e.exists).map((e) => (e.data()! as Map<String,dynamic>)[ASSIGN_GUID_FIELD_NAME]).toList();
-        var allAssignGuid = allAssignData.where((e) => e.exists).map((e) => (e.data()! as AssignModel).guid).toList();
+        var allAssignGuid = serviceAssignData.where((e) => e.exists).map((e) => (e.data()! as ServiceModel).guid).toList();
         // 2. get not found assignGuidList
         var notFoundAssignGuidList = serviceGuids.where((e) => !allAssignGuid.contains(e)).toList();
         if (notFoundAssignGuidList.isNotEmpty){
@@ -227,10 +235,10 @@ class ServiceRepository {
       //         (index) => guids.sublist(index * , min(guids.length, (index + 1) * )));
       Iterable<List<String>> batchGuids = partition(guids, repositoryConfig.whereInLimit);
       // get all reference from remote
-      Iterable<Future<QuerySnapshot>> getRemoteAssignListFutureList = batchGuids
-          .map((assignGuidListChunk) => _serviceCollection.where(
-          config.serviceGuidFieldName, whereIn: assignGuidListChunk).get());
-      var queryResultList = await Future.wait(getRemoteAssignListFutureList);
+      Iterable<Future<QuerySnapshot>> getRemoteServiceListFutureList = batchGuids
+          .map((serviceGuidListChunk) => _serviceCollection.where(
+          config.serviceGuidFieldName, whereIn: serviceGuidListChunk).get());
+      var queryResultList = await Future.wait(getRemoteServiceListFutureList);
       result = queryResultList.where((e) => e.docs.isNotEmpty).expand((e) => e.docs.where((d) => d.exists)).toList();
     }
     else{

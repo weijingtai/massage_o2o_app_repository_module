@@ -150,6 +150,9 @@ class AssignRepository {
     // when it's logger with warm level, it will print all fieldsMap
     if (fieldsMap.isNotEmpty) {
       logger.i("updateFields assignGuid:$assignGuid");
+      if (fieldsMap.containsValue(null)){
+        fieldsMap = fieldsMap.map((k,v) => MapEntry(k, v ?? FieldValue.delete()));
+      }
       logger.v(fieldsMap);
       logger.d("try get old assign from remote.");
       // check fieldsMap contains lastModifiedAt
@@ -183,13 +186,16 @@ class AssignRepository {
     // when it's logger with warm level, it will print all assignGuidList
     if (assignGuidList.isNotEmpty && fieldsMap.isNotEmpty) {
       logger.i("updateAssignListFields total:${assignGuidList.length}");
-      logger.v(fieldsMap);
       logger.v(assignGuidList);
       // check fieldsMap contains lastModifiedAt
       // if not set to DateTime.now()
       if (!fieldsMap.containsKey(config.lastModifiedAtFieldName)){
         fieldsMap[config.lastModifiedAtFieldName] = DateTime.now().toIso8601String();
       }
+      if (fieldsMap.containsValue(null)){
+        fieldsMap = fieldsMap.map((k,v) => MapEntry(k, v ?? FieldValue.delete()));
+      }
+      logger.v(fieldsMap);
       List<QueryDocumentSnapshot> allAssignData = await _loadByGuids(assignGuidList);
       logger.d("total:${assignGuidList.length} to update, found total:${allAssignData.length} in remote.");
       // check allAssignData is not empty

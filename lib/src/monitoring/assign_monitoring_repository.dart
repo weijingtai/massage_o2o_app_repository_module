@@ -140,12 +140,12 @@ class AssignMonitoringRepository {
             _handleAssignAdded(assignModel,ignoreBeforeCreatedAtWhenAdded: ignoreBeforeCreatedAtWhenAdded);
             break;
           case DocumentChangeType.modified:
-            if ([AssignStateEnum.Assigning,AssignStateEnum.Delivering].contains(assignModel.state)){
-              addAssignTimeout(assignModel);
-            }else{
-              removeAssignTimeout(assignModel);
-            }
             logger.d("monitoringActivatedAssignByOrderGuid: DocumentChangeType.modified assignGuid:${assignModel.guid}");
+            // if ([AssignStateEnum.Assigning,AssignStateEnum.Delivering].contains(assignModel.state)){
+            //   addAssignTimeout(assignModel);
+            // }else{
+            //   removeAssignTimeout(assignModel);
+            // }
             _handleAssignChanged(assignModel);
             break;
           case DocumentChangeType.removed:

@@ -10,12 +10,14 @@ class ServiceRepositoryConfig {
   String orderGuidFieldName;
   String assignGuidFieldName;
   String serviceGuidFieldName;
+  String lastModifiedAtFieldName;
   ServiceRepositoryConfig({
     required this.collectionName,
     required this.masterUidFieldName,
     required this.orderGuidFieldName,
     required this.assignGuidFieldName,
-    required this.serviceGuidFieldName
+    required this.serviceGuidFieldName,
+    required this.lastModifiedAtFieldName,
 });
   factory ServiceRepositoryConfig.fromJson(Map<String, dynamic> json) => _$ServiceRepositoryConfigFromJson(json);
   Map<String, dynamic> toJson() => _$ServiceRepositoryConfigToJson(this);

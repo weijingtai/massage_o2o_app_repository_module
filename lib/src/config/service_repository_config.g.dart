@@ -14,6 +14,7 @@ ServiceRepositoryConfig _$ServiceRepositoryConfigFromJson(
       orderGuidFieldName: json['orderGuidFieldName'] as String,
       assignGuidFieldName: json['assignGuidFieldName'] as String,
       serviceGuidFieldName: json['serviceGuidFieldName'] as String,
+      lastModifiedAtFieldName: json['lastModifiedAtFieldName'] as String,
     );
 
 Map<String, dynamic> _$ServiceRepositoryConfigToJson(
@@ -24,4 +25,5 @@ Map<String, dynamic> _$ServiceRepositoryConfigToJson(
       'orderGuidFieldName': instance.orderGuidFieldName,
       'assignGuidFieldName': instance.assignGuidFieldName,
       'serviceGuidFieldName': instance.serviceGuidFieldName,
+      'lastModifiedAtFieldName': instance.lastModifiedAtFieldName,
     };

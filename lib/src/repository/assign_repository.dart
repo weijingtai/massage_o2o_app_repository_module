@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'package:massage_o2o_app_models_module/enums.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
 import 'package:massage_o2o_app_repository_module/src/config/repository_config.dart';
 import 'package:quiver/iterables.dart';
@@ -339,6 +340,20 @@ class AssignRepository {
   }
 
 
+  ///
+  /// this method only load assign which state is Assigning or Delivering
+  /// and it's not expired
+  Future<List<AssignModel>> listAllAssigningByMasterUid(String masterUid) async {
+    logger.i("listAllAssigningByMasterUid masterUid:$masterUid");
+    var querySnapshot = await assignCollection
+        .where(config.masterUidFieldName,isEqualTo: masterUid)
+        .where(config.assignStateFieldName,whereIn: [AssignStateEnum.Assigning.name,AssignStateEnum.Delivering.name])
+        .orderBy(config.timeoutAtFieldName)
+        .where(config.timeoutAtFieldName,isGreaterThanOrEqualTo: DateTime.now().toIso8601String())
+        .get();
+    logger.i("listAllAssigningByMasterUid success with total:${querySnapshot.size}, in assigning state.");
+    return querySnapshot.docs.map((e) => e.data()! as AssignModel).toList();
+  }
 
   ///
   ///

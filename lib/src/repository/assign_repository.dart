@@ -343,7 +343,7 @@ class AssignRepository {
   ///
   /// this method only load assign which state is Assigning or Delivering
   /// and it's not expired
-  Future<List<AssignModel>> listAllAssigningByMasterUid(String masterUid) async {
+  Future<List<AssignModel>> listAllActivatedByMasterUid(String masterUid) async {
     logger.i("listAllAssigningByMasterUid masterUid:$masterUid");
     var querySnapshot = await assignCollection
         .where(config.masterUidFieldName,isEqualTo: masterUid)

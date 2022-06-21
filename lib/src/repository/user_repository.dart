@@ -92,7 +92,7 @@ class UserRepository{
     }
 
   }
-  Future<MasterUserModel?> getMasterUser(String uid) async{
+  Future<MasterUserModel?> getMasterUser(String uid) async {
     logger.i("UserRepository#getMasterUser: uid: $uid");
     var snap = await _userCollection.doc(uid)
         .get();
@@ -104,8 +104,7 @@ class UserRepository{
     if(snap.exists){
       var role = (snap.data()!['role'] as String).toUpperCase();
       if(role == 'MASTER'){
-        var masterUser = MasterUserModel.fromJson(snap.data()!);
-        logger.v(masterUser.toJson());
+        logger.v(snap.data()!);
         return MasterUserModel.fromJson(snap.data()!);
       }else{
         logger.w("UserRepository#getMasterUser: uid: $uid is not a MASTER role.");
@@ -160,9 +159,8 @@ class UserRepository{
 
     if(snap.exists){
       var role = (snap.data()!['role'] as String).toUpperCase();
-      if(role == 'MASTER'){
-        var masterUser = MasterUserModel.fromJson(snap.data()!);
-        logger.v(masterUser.toJson());
+      if(role == 'HOST'){
+        logger.v(snap.data()!);
         return HostUserModel.fromJson(snap.data()!);
       }else{
         logger.w("UserRepository#getMasterUser: uid: $uid is not a MASTER role.");

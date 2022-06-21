@@ -7,6 +7,8 @@ import 'package:massage_o2o_app_models_module/enums.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
 import 'package:tuple/tuple.dart';
 
+import '../../config.dart';
+import '../config/activated_order_repository_config.dart';
 import '../const_names.dart';
 import '../enums/order_list_updated_type_enum.dart';
 
@@ -29,7 +31,10 @@ class OrderMonitoringRepository {
   StreamController<Tuple2<OrderListUpdatedTypeEnum,OrderModel?>> singleOrderStreamController = StreamController.broadcast();
   Map<String,OrderModel> monitoringOrderGuid = {};
 
-  OrderMonitoringRepository();
+  RepositoryConfig repositoryConfig;
+  ActivatedOrderRepositoryConfig get config => repositoryConfig.activatedOrderRepositoryConfig;
+
+  OrderMonitoringRepository({required this.repositoryConfig});
 
   String? getCollectionNameByOrderState(OrderStatusEnum orderState){
     switch(orderState){
@@ -51,9 +56,9 @@ class OrderMonitoringRepository {
   Future<void> monitorActivatedOrder(String hostUid,String orderGuid,{bool isActivated = true}) async {
     if (monitoringOrderGuid.isEmpty || !monitoringOrderGuid.containsKey(orderGuid)){
       FirebaseFirestore.instance
-          .collectionGroup(isActivated?ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED:ACTIVATED_ORDER_COLLECTION_NAME_ARCHIVED)
+          .collectionGroup(isActivated?config.activatedSubCollectionName:config.archivedSubCollectionName)
           .where("hostUid",isEqualTo: hostUid)
-          .where("guid",isEqualTo: orderGuid)
+          .where(config.orderGuidFieldName,isEqualTo: orderGuid)
           .snapshots()
           .listen((snapshot){
         if (snapshot.docs.isNotEmpty){
@@ -180,24 +185,24 @@ class OrderMonitoringRepository {
     return Future.wait(allMonitoringFutures);
   }
   Future<void> monitorDraftOrders(String hostUid,StreamSink<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> sink,{DateTime? ignoreBeforeAt}) async {
-    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/$ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED?status=None' collection");
+    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=None' collection");
     return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.None, sink,ignoreBeforeAt: ignoreBeforeAt);
   }
 
   Future<void> monitorServingOrders(String hostUid,StreamSink<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> sink,{DateTime? ignoreBeforeAt}){
-    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/$ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED?status=Serving' collection");
+    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=Serving' collection");
     return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Serving, sink,ignoreBeforeAt: ignoreBeforeAt);
   }
   Future<void> monitorWaitingOrders(String hostUid,StreamSink<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> sink,{DateTime? ignoreBeforeAt}){
-    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/$ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED?status=Waiting' collection");
+    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=Waiting' collection");
     return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Waiting, sink,ignoreBeforeAt: ignoreBeforeAt);
   }
   Future<void> monitorAssigningOrders(String hostUid,{DateTime? ignoreBeforeAt}){
-    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/$ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED?status=Assigning' collection");
+    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=Assigning' collection");
     return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Assigning, monitorAssigningStreamController.sink,ignoreBeforeAt: ignoreBeforeAt);
   }
   Future<void> monitorCreatingOrders(String hostUid,{DateTime? ignoreBeforeAt}){
-    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/$ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED?status=Creating' collection");
+    logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=Creating' collection");
     return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Creating, monitorCreatingStreamController.sink,ignoreBeforeAt: ignoreBeforeAt);
   }
 
@@ -205,7 +210,7 @@ class OrderMonitoringRepository {
     logger.i("monitorCompletedOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/<TODAY_ARCHIVED>' collection");
     activatedOrderCollection
         .doc(hostUid)
-        .collection(ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED)
+        .collection(config.archivedSubCollectionName)
         .snapshots()
         .listen((event)=>handleListenEvent(event,OrderListTypeEnum.todayCompleted,sink,ignoreBeforeCreateAt: ignoreBeforeAt));
   }
@@ -213,7 +218,7 @@ class OrderMonitoringRepository {
     var type = _getOrderListType(status);
     activatedOrderCollection
         .doc(hostUid)
-        .collection(ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED)
+        .collection(config.activatedSubCollectionName)
         .where("status", isEqualTo: status.name)
         .snapshots()
         .listen((event)=>handleListenEvent(event,type,sink,ignoreBeforeCreateAt: ignoreBeforeAt));

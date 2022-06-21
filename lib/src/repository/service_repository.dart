@@ -99,6 +99,12 @@ class ServiceRepository {
     }
     return null;
   }
+  Future<List<ServiceModel>> loadAllByServiceGuids(List<String> serviceGuids) async{
+    logger.i("loadAllByServiceGuids: total: ${serviceGuids.length}");
+    var querySnapshot = await _serviceCollection.where(config.serviceGuidFieldName, whereIn: serviceGuids).get();
+    logger.d("loadAllByServiceGuids: total: ${querySnapshot.size} found.");
+    return querySnapshot.docs.map((doc)=>ServiceModel.fromJson(doc.data() as Map<String, dynamic>)).toList();
+  }
   Future<List<ServiceModel>> loadAllByOrderGuidList(List<String> orderGuidList) async {
     logger.i("loadAllByOrderGuid: for total: ${orderGuidList.length} orders,");
     if (orderGuidList.isNotEmpty) {

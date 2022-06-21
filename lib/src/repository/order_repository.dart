@@ -6,21 +6,34 @@ import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:massage_o2o_app_models_module/enums.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
+import 'package:quiver/iterables.dart';
 import 'package:tuple/tuple.dart';
 
+import '../../config.dart';
+import '../config/activated_order_repository_config.dart';
 import '../const_names.dart';
 import '../enums/order_list_updated_type_enum.dart';
 
 class OrderRepository{
   static var logger = Logger();
 
+  RepositoryConfig repositoryConfig;
+  ActivatedOrderRepositoryConfig get config => repositoryConfig.activatedOrderRepositoryConfig;
+  FirebaseFirestore firebaseInstance;
+  OrderRepository({
+    required this.repositoryConfig,
+    required this.firebaseInstance
+  }){
+    activatedOrderGroup = firebaseInstance.collectionGroup(repositoryConfig.activatedOrderRepositoryConfig.collectionName);
+    orderCollection = firebaseInstance.collection(repositoryConfig.activatedOrderRepositoryConfig.collectionName);
+  }
 
 
   final Map<String,DateTime> fullFetchDateMapper = {};
-  CollectionReference orderCollection = FirebaseFirestore.instance.collection(ACTIVATED_ORDER_COLLECTION_NAME);
+  late Query<Map<String, dynamic>> activatedOrderGroup;
+  late CollectionReference orderCollection;
   // CollectionReference orderCollection = FirebaseFirestore.instance.collection(ORDER_COLLECTION_NAME);
   // CollectionReference activatedOrderCollection = FirebaseFirestore.instance.collection(ACTIVATED_ORDER_COLLECTION_NAME);
-  CollectionReference archivedOrderCollection = FirebaseFirestore.instance.collection(ACHIVED_ORDER_COLLECTION_NAME);
 
   bool todayMonitored = false;
   bool servingMonitored = false;
@@ -28,6 +41,7 @@ class OrderRepository{
   bool preparingMonitored = false;
 
   bool isPreparingMonitored = false;
+
 
 
   List<OrderModel> displayedCreatingOrders = [];
@@ -63,7 +77,7 @@ class OrderRepository{
   Future<void> monitorPreparingOrders(String hostUid) async {
     logger.i("monitorPreparingOrders");
     if (!isPreparingMonitored){
-      var collectionName = ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED;
+      var collectionName = config.activatedSubCollectionName;
       orderCollection
           .doc(hostUid)
           .collection(collectionName)
@@ -175,7 +189,7 @@ class OrderRepository{
     if (!todayMonitored){
       orderCollection
           .doc(hostUid)
-          .collection(ORDER_COLLECTION_NAME_ARCHIVED)
+          .collection(config.archivedSubCollectionName)
           .where("allDoneAt", isEqualTo: DateFormat("yyyy-MM-dd").format(DateTime.now()))
           .snapshots()
           .listen((event) {
@@ -225,7 +239,7 @@ class OrderRepository{
       case OrderStatusEnum.Serving:
         return ORDER_COLLECTION_NAME_SERVING;
       case OrderStatusEnum.Completed:
-        return ORDER_COLLECTION_NAME_ARCHIVED;
+        return config.archivedSubCollectionName;
     }
     return null;
   }
@@ -276,17 +290,17 @@ class OrderRepository{
     return null;
   }
   Future<OrderModel?> get(String orderGuid,String hostUid,{bool isActivated = true}) async {
-    logger.i("load orderModel by hostUid:$hostUid, orderGuid:$orderGuid ${isActivated?"activated":"archived"}");
+    logger.i("load orderModel by hostUid:$hostUid, orderGuid:$orderGuid ${isActivated?"${config.activatedSubCollectionName}":config.archivedSubCollectionName}");
     // creating / assigning / serving / waiting
     var dataSnap = await orderCollection
         .doc(hostUid)
-        .collection(isActivated?"activated":"archived")
+        .collection(isActivated?config.activatedSubCollectionName:config.archivedSubCollectionName)
         .doc(orderGuid.toString())
         .get();
     if (dataSnap.exists){
       return OrderModel.fromJson(dataSnap.data()!);
     }else{
-      logger.w("not found by Order/$hostUid/${isActivated?"activated":"archived"}/$orderGuid");
+      logger.w("not found by Order/$hostUid/${isActivated?config.activatedSubCollectionName:config.archivedSubCollectionName}/$orderGuid");
       return null;
     }
   }
@@ -294,7 +308,7 @@ class OrderRepository{
     logger.i("load creating orders by hostUid:$hostUid");
     var dataSnap = await orderCollection
         .doc(hostUid)
-        .collection(ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED)
+        .collection(config.activatedSubCollectionName)
         .orderBy("createdAt",descending: false)
         .where("status",isEqualTo: OrderStatusEnum.Creating.name)
         .get();
@@ -310,7 +324,7 @@ class OrderRepository{
     logger.i("load creating orders by hostUid:$hostUid");
     var dataSnap = await orderCollection
         .doc(hostUid)
-        .collection(ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED)
+        .collection(config.activatedSubCollectionName)
         .orderBy("createdAt",descending: false)
         .where("status",isEqualTo: OrderStatusEnum.Assigning.name)
         .get();
@@ -343,10 +357,55 @@ class OrderRepository{
     //  - archived
     var docRef = orderCollection.doc(hostUid);
     List<QuerySnapshot<Map<String,dynamic>>> allResults = await Future.wait([
-      docRef.collection(ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED).get(),
-      docRef.collection(ACTIVATED_ORDER_COLLECTION_NAME_ARCHIVED).get(),
+      docRef.collection(config.activatedSubCollectionName).get(),
+      docRef.collection(config.archivedSubCollectionName).get(),
     ]);
     return allResults.map((e) => e.docs.where((e) => e.exists).map((e) => OrderModel.fromJson(e.data())).toList()).toList();
+  }
+
+  Future<OrderModel?> load(String orderGuid) async{
+    logger.i("load orderModel by orderGuid:$orderGuid");
+    var querySnapshot = await activatedOrderGroup.where("guid",isEqualTo: orderGuid).get();
+    if (querySnapshot.docs.isNotEmpty){
+      return OrderModel.fromJson(querySnapshot.docs.first.data());
+    }else{
+      return null;
+    }
+  }
+  // this functions will load all given order's guid
+  Future<List<OrderModel>> loadAllByOrderGuids(List<String> orderGuids) async {
+    logger.i("loadAllByOrderGuids: with total:${orderGuids.length} orderGuids.");
+    logger.v(orderGuids);
+    // load from collection with collectionName list:
+    //  - activated
+    //  - archived
+    if (orderGuids.length <= repositoryConfig.whereInLimit){
+      QuerySnapshot querySnapshot = await activatedOrderGroup.where(config.orderGuidFieldName,whereIn: orderGuids).get();
+      
+      if (querySnapshot.size > 0){
+        logger.d("loadAllByOrderGuids: success with total ${querySnapshot.size}.");
+        return querySnapshot.docs.map((e) => OrderModel.fromJson(e.data() as Map<String,dynamic>)).toList();
+      }else{
+        logger.d("loadAllByOrderGuids: success with empty.");
+        return [];
+      }
+    }else{
+      // partition the orderGuids into several batches
+      var batchSize = repositoryConfig.whereInLimit;
+      Iterable<Future<QuerySnapshot<Map<String,dynamic>>>> queryFutures =  partition(orderGuids, repositoryConfig.whereInLimit).map((e) => activatedOrderGroup.where(config.orderGuidFieldName,whereIn: e).get());
+      List<QuerySnapshot> querySnapshotList = await Future.wait(queryFutures);
+      var resultList = querySnapshotList
+          .map((e) => e.docs.map((e) => OrderModel.fromJson(e.data() as Map<String,dynamic>)).toList())
+          .expand((e) => e);
+      if (resultList.isNotEmpty){
+        logger.d("loadAllByOrderGuids: success with total ${resultList.length}.");
+        return resultList.toList();
+      }else{
+        logger.d("loadAllByOrderGuids: success with empty.");
+        return [];
+      }
+    }
+
   }
 
   Future<List<List<OrderModel>>> loadActivatedOrderList(String hostUid) async {
@@ -376,7 +435,7 @@ class OrderRepository{
     logger.i("load activated order by hostUid:$hostUid,orderGuid:$orderGuid");
     var snap = await orderCollection
         .doc(hostUid)
-        .collection(ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED)
+        .collection(config.activatedSubCollectionName)
         .doc(orderGuid)
         .get();
     if (snap.exists) {
@@ -423,10 +482,10 @@ class OrderRepository{
   /// method will create a new document Firestore with '/Order/<CURRENT_LOGGED_IN_HOST_UID>/<PREPARING_COLLECTION_NAME>/<ORDER_GUID>'
   /// remove assignList and assigneeList from order
   Future<void> _remoteCreateActivatedOrder(OrderModel order) async {
-    logger.i("_remoteCreateActivatedOrder create new order /$ORDER_COLLECTION_NAME/${order.hostUid}/$ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED with order:${order.guid}");
+    logger.i("_remoteCreateActivatedOrder create new order /$ORDER_COLLECTION_NAME/${order.hostUid}/${config.activatedSubCollectionName} with order:${order.guid}");
     var orderDocumentRef = orderCollection
         .doc(order.hostUid)
-        .collection(ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED)
+        .collection(config.activatedSubCollectionName)
         .doc(order.guid);
     var orderJsonData = order.toJson();
     await orderDocumentRef.set(orderJsonData, SetOptions(merge: true));
@@ -461,10 +520,10 @@ class OrderRepository{
         .set(order.toJson());
   }
   Future<void> deleteActivatedOrder(String hostUid,String orderGuid){
-    logger.d("delete order from /${orderCollection.path}/$hostUid/$ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED/$orderGuid");
+    logger.d("delete order from /${orderCollection.path}/$hostUid/${config.activatedSubCollectionName}/$orderGuid");
     return orderCollection
         .doc(hostUid)
-        .collection(ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED)
+        .collection(config.activatedSubCollectionName)
         .doc(orderGuid)
         .delete();
   }
@@ -483,7 +542,7 @@ class OrderRepository{
     }
     await orderCollection
         .doc(hostUid)
-        .collection(isActivated?ACTIVATED_ORDER_COLLECTION_NAME_ACTIVATED:ACTIVATED_ORDER_COLLECTION_NAME_ARCHIVED)
+        .collection(isActivated?config.activatedSubCollectionName:config.archivedSubCollectionName)
         .doc(orderGuid)
         .update(updateField);
         // .set(updateField,SetOptions(merge: true));
@@ -510,29 +569,29 @@ class OrderRepository{
     }
     logger.i("update order:${order.guid} state from old:${order.previousStatus.name} to new:${order.status.name}.");
     if (order.isArchived && OrderModel.checkIsActivated(order.previousStatus)){
-      logger.d("order:${order.guid} will be 'archived'");
-      logger.v("move order:${order.guid} from 'activated' to 'archived'.");
+      logger.d("order:${order.guid} will be '${config.archivedSubCollectionName}'");
+      logger.v("move order:${order.guid} from '${config.activatedSubCollectionName}' to '${config.archivedSubCollectionName}'.");
       await Future.wait([
         orderCollection
             .doc(order.hostUid)
-            .collection("activated")
+            .collection(config.activatedSubCollectionName)
             .doc(order.guid)
             .delete(),
         orderCollection
             .doc(order.hostUid)
-            .collection("archived")
+            .collection(config.archivedSubCollectionName)
             .doc(order.guid)
             .set(order.toJson())
       ]);
-      logger.i("update: order:${order.guid} 'archived'.");
+      logger.i("update: order:${order.guid} '${config.archivedSubCollectionName}'.");
       return true;
     }
-    logger.d("update /order/${order.hostUid}/activated/${order.guid}");
+    logger.d("update /order/${order.hostUid}/${config.activatedSubCollectionName}/${order.guid}");
     await FirebaseFirestore
         .instance
         .collection("Order")
         .doc(order.hostUid)
-        .collection("activated")
+        .collection(config.activatedSubCollectionName)
         .doc(order.guid)
         .set(order.toJson(),SetOptions(merge: true));
     return true;

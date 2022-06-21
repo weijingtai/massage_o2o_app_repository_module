@@ -1,5 +1,10 @@
 {
   "whereInLimit": 10,
+  "ActivatedOrderRepositoryConfig": {
+    "collectionName": "ActivatedOrder",
+    "activatedSubCollectionName": "activated",
+    "archivedSubCollectionName": "archived"
+  },
   "serviceRepositoryConfig": {
     "collectionName": "Service",
     "masterUidFieldName": "masterUid",

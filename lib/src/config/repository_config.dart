@@ -1,6 +1,7 @@
 
 import 'package:json_annotation/json_annotation.dart';
 import 'assign_repository_config.dart';
+import 'activated_order_repository_config.dart';
 import 'service_repository_config.dart';
 part 'repository_config.g.dart';
 
@@ -9,10 +10,12 @@ part 'repository_config.g.dart';
 )
 class RepositoryConfig{
   int whereInLimit;
+  ActivatedOrderRepositoryConfig activatedOrderRepositoryConfig;
   ServiceRepositoryConfig serviceRepositoryConfig;
   AssignRepositoryConfig assignRepositoryConfig;
   RepositoryConfig({
     required this.whereInLimit,
+    required this.activatedOrderRepositoryConfig,
     required this.serviceRepositoryConfig,
     required this.assignRepositoryConfig
 });

@@ -24,8 +24,8 @@ class OrderRepository{
     required this.repositoryConfig,
     required this.firebaseInstance
   }){
-    activatedOrderGroup = firebaseInstance.collectionGroup(repositoryConfig.activatedOrderRepositoryConfig.collectionName);
-    orderCollection = firebaseInstance.collection(repositoryConfig.activatedOrderRepositoryConfig.activatedSubCollectionName);
+    activatedOrderGroup = firebaseInstance.collectionGroup(repositoryConfig.activatedOrderRepositoryConfig.activatedSubCollectionName);
+    orderCollection = firebaseInstance.collection(repositoryConfig.activatedOrderRepositoryConfig.collectionName);
   }
 
 

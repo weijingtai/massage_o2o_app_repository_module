@@ -25,7 +25,7 @@ class OrderRepository{
     required this.firebaseInstance
   }){
     activatedOrderGroup = firebaseInstance.collectionGroup(repositoryConfig.activatedOrderRepositoryConfig.collectionName);
-    orderCollection = firebaseInstance.collection(repositoryConfig.activatedOrderRepositoryConfig.collectionName);
+    orderCollection = firebaseInstance.collection(repositoryConfig.activatedOrderRepositoryConfig.activatedSubCollectionName);
   }
 
 
@@ -365,7 +365,7 @@ class OrderRepository{
 
   Future<OrderModel?> load(String orderGuid) async{
     logger.i("load orderModel by orderGuid:$orderGuid");
-    var querySnapshot = await activatedOrderGroup.where("guid",isEqualTo: orderGuid).get();
+    var querySnapshot = await activatedOrderGroup.where(config.orderGuidFieldName,isEqualTo: orderGuid).get();
     if (querySnapshot.docs.isNotEmpty){
       return OrderModel.fromJson(querySnapshot.docs.first.data());
     }else{

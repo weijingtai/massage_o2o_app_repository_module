@@ -57,6 +57,7 @@ class AssignMonitoringRepository {
   StreamSink<Tuple2<AssignModelChangeType,AssignModel>> get _sink=> assignStreamController.sink;
   Stream<Tuple2<AssignModelChangeType,AssignModel>> get assignStream => assignStreamController.stream;
 
+  @deprecated
   Map<String,Timer> assignTimeoutTimerMap = {};
   StreamSubscription<QuerySnapshot<AssignModel?>>? masterUidListener;
 
@@ -104,6 +105,7 @@ class AssignMonitoringRepository {
     _sink.add(Tuple2(AssignModelChangeType.Deleted,changedAssign));
   }
 
+  @deprecated
   void removeAssignTimeout(AssignModel assignModel){
     logger.d("remove assignTimeout for assignModel: ${assignModel.guid}");
     var timer = assignTimeoutTimerMap[assignModel.guid];
@@ -112,6 +114,7 @@ class AssignMonitoringRepository {
       assignTimeoutTimerMap.remove(assignModel.guid);
     }
   }
+  @deprecated
   void addAssignTimeout(AssignModel assignModel){
     if (!assignTimeoutTimerMap.containsKey(assignModel.guid)){
       if (assignModel.timeoutAt != null){
@@ -132,10 +135,10 @@ class AssignMonitoringRepository {
       if (docChanges.doc.exists && assignModel != null) {
         switch(docChanges.type){
           case DocumentChangeType.added:
-            if ([AssignStateEnum.Assigning,AssignStateEnum.Delivering].contains(assignModel.state)){
+            // if ([AssignStateEnum.Assigning,AssignStateEnum.Delivering].contains(assignModel.state)){
               // _handleAssignAdded(assignModel,ignoreBeforeCreatedAtWhenAdded: ignoreBeforeCreatedAtWhenAdded);
-              addAssignTimeout(assignModel);
-            }
+              // addAssignTimeout(assignModel);
+            // }
             logger.d('handleAssignAdded: ${assignModel.guid} with ignoreBeforeCreatedAtWhenAdded:${ignoreBeforeCreatedAtWhenAdded?.toIso8601String() ?? "null"}');
             _handleAssignAdded(assignModel,ignoreBeforeCreatedAtWhenAdded: ignoreBeforeCreatedAtWhenAdded);
             break;
@@ -149,7 +152,7 @@ class AssignMonitoringRepository {
             _handleAssignChanged(assignModel);
             break;
           case DocumentChangeType.removed:
-            removeAssignTimeout(assignModel);
+            // removeAssignTimeout(assignModel);
             logger.d("monitoringActivatedAssignByOrderGuid: DocumentChangeType.removed assignGuid:${assignModel.guid}");
             _handleAssignRemoved(assignModel);
             break;

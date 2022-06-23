@@ -51,6 +51,7 @@ class AssignMonitoringRepository {
   /// key is orderGuid
   /// value is listener
   final Map<String,StreamSubscription<QuerySnapshot<AssignModel?>>> assignListener = {};
+  final Map<String,StreamSubscription<DocumentSnapshot<AssignModel?>>> assignDocListener = {};
 
   @visibleForTesting
   final StreamController<Tuple2<AssignModelChangeType,AssignModel>> assignStreamController = StreamController<Tuple2<AssignModelChangeType,AssignModel>>.broadcast();
@@ -224,6 +225,33 @@ class AssignMonitoringRepository {
         logger.d("cancelMonitoringActivatedByOrderGuidList: $guid is not monitoring");
       }
     });
+  }
+  monitorAssign(String assignGuid){
+    if (monitoringAssignMap.containsKey(assignGuid)){
+      logger.i("monitorAssign is already monitoring, $assignGuid");
+      return;
+    }
+    assignDocListener[assignGuid] = assignCollection
+        .doc(assignGuid)
+        .snapshots()
+        .listen((event){
+          if (event.exists) {
+            logger.d("monitorAssign assignGuid: $assignGuid");
+            AssignModel assignModel = (event.data() as AssignModel)!;
+            logger.v(assignModel.toJson());
+            monitoringAssignMap[assignModel.guid] = assignModel;
+            if (monitoringAssignMap.containsKey(assignModel.guid)){
+              logger.d("monitorAssign: ${assignModel.guid} is updated.");
+              _sink.add(Tuple2(AssignModelChangeType.Updated,assignModel));
+            }else{
+              logger.d("monitorAssign: ${assignModel.guid} is added.");
+              _sink.add(Tuple2(AssignModelChangeType.Added,assignModel));
+            }
+          }else{
+            logger.w("monitorAssign assignGuid: $assignGuid is null.");
+          }
+    },
+        onError: (error)=>logger.e("monitorAssign: $error"));
   }
   ///
   /// Warning: this listen will not trigger DocumentChangeType.removed event

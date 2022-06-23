@@ -60,6 +60,7 @@ class AssignMonitoringRepository {
   final StreamController<Tuple2<AssignModelChangeType,AssignModel>> singleAssignStreamController = StreamController<Tuple2<AssignModelChangeType,AssignModel>>.broadcast();
   StreamSink<Tuple2<AssignModelChangeType,AssignModel>> get _singleSink=> singleAssignStreamController.sink;
   Stream<Tuple2<AssignModelChangeType,AssignModel>> get singleAssignStream => singleAssignStreamController.stream;
+
   final Map<String,StreamSubscription<DocumentSnapshot<AssignModel?>>> assignDocListener = {};
   Map<String,AssignModel> singleAssignMap = {};
 
@@ -236,7 +237,7 @@ class AssignMonitoringRepository {
       logger.i("monitorAssign is already monitoring, $assignGuid");
       return;
     }
-    assignCollection
+    assignDocListener[assignGuid] = assignCollection
         .doc(assignGuid)
         .snapshots()
         .listen((event){
@@ -257,6 +258,16 @@ class AssignMonitoringRepository {
           }
     },
         onError: (error)=>logger.e("monitorAssign: $error"));
+  }
+  cancelMonitorAssign(String assignGuid){
+    if (singleAssignMap.containsKey(assignGuid)){
+      logger.i("cancel monitorAssign, $assignGuid");
+      singleAssignMap.remove(assignGuid);
+    }
+    if (assignDocListener.containsKey(assignGuid)){
+      logger.i("cancel monitorAssign Listener, $assignGuid");
+      assignDocListener[assignGuid]!.cancel();
+    }
   }
   ///
   /// Warning: this listen will not trigger DocumentChangeType.removed event

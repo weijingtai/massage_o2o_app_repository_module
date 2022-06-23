@@ -232,7 +232,7 @@ class AssignMonitoringRepository {
     });
   }
   monitorAssign(String assignGuid){
-    if (monitoringAssignMap.containsKey(assignGuid)){
+    if (singleAssignMap.containsKey(assignGuid)){
       logger.i("monitorAssign is already monitoring, $assignGuid");
       return;
     }

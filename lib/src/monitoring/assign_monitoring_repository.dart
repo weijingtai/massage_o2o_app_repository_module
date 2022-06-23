@@ -51,12 +51,17 @@ class AssignMonitoringRepository {
   /// key is orderGuid
   /// value is listener
   final Map<String,StreamSubscription<QuerySnapshot<AssignModel?>>> assignListener = {};
-  final Map<String,StreamSubscription<DocumentSnapshot<AssignModel?>>> assignDocListener = {};
 
   @visibleForTesting
   final StreamController<Tuple2<AssignModelChangeType,AssignModel>> assignStreamController = StreamController<Tuple2<AssignModelChangeType,AssignModel>>.broadcast();
   StreamSink<Tuple2<AssignModelChangeType,AssignModel>> get _sink=> assignStreamController.sink;
   Stream<Tuple2<AssignModelChangeType,AssignModel>> get assignStream => assignStreamController.stream;
+
+  final StreamController<Tuple2<AssignModelChangeType,AssignModel>> singleAssignStreamController = StreamController<Tuple2<AssignModelChangeType,AssignModel>>.broadcast();
+  StreamSink<Tuple2<AssignModelChangeType,AssignModel>> get _singleSink=> singleAssignStreamController.sink;
+  Stream<Tuple2<AssignModelChangeType,AssignModel>> get singleAssignStream => singleAssignStreamController.stream;
+  final Map<String,StreamSubscription<DocumentSnapshot<AssignModel?>>> assignDocListener = {};
+  Map<String,AssignModel> singleAssignMap = {};
 
   @deprecated
   Map<String,Timer> assignTimeoutTimerMap = {};
@@ -231,21 +236,21 @@ class AssignMonitoringRepository {
       logger.i("monitorAssign is already monitoring, $assignGuid");
       return;
     }
-    assignDocListener[assignGuid] = assignCollection
+    assignCollection
         .doc(assignGuid)
         .snapshots()
         .listen((event){
           if (event.exists) {
             logger.d("monitorAssign assignGuid: $assignGuid");
-            AssignModel assignModel = (event.data() as AssignModel)!;
+            AssignModel assignModel = (event.data() as AssignModel);
             logger.v(assignModel.toJson());
-            monitoringAssignMap[assignModel.guid] = assignModel;
-            if (monitoringAssignMap.containsKey(assignModel.guid)){
+            singleAssignMap[assignModel.guid] = assignModel;
+            if (singleAssignMap.containsKey(assignModel.guid)){
               logger.d("monitorAssign: ${assignModel.guid} is updated.");
-              _sink.add(Tuple2(AssignModelChangeType.Updated,assignModel));
+              _singleSink.add(Tuple2(AssignModelChangeType.Updated,assignModel));
             }else{
               logger.d("monitorAssign: ${assignModel.guid} is added.");
-              _sink.add(Tuple2(AssignModelChangeType.Added,assignModel));
+              _singleSink.add(Tuple2(AssignModelChangeType.Added,assignModel));
             }
           }else{
             logger.w("monitorAssign assignGuid: $assignGuid is null.");

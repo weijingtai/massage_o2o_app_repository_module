@@ -92,6 +92,28 @@ class ServiceRepository {
     }
   }
 
+  Future<List<ServiceModel>> loadAllServiceByMasterUid(String masterUid,{DateTime? startAt,DateTime? endAt}) async {
+    logger.i("loadAllServiceByMasterUid: masterUid: $masterUid");
+    var query = _serviceCollection
+        .where("masterUid",isEqualTo: masterUid)
+        .orderBy("createdAt",descending: false);
+    if (startAt != null){
+      logger.d("loadAllServiceByMasterUid: with startAt: $startAt");
+      query = query.startAt([startAt.toIso8601String()]);
+    }
+    if (endAt != null){
+      logger.d("loadAllServiceByMasterUid: with startAt: $startAt");
+      query = query.endAt([endAt.toIso8601String()]);
+    }
+    var querySnapshot = await query.get();
+    if (querySnapshot.size > 0){
+
+      logger.i("loadAllServiceByMasterUid: load total:${querySnapshot.size}.");
+      return querySnapshot.docs.map((e)=>ServiceModel.fromJson(e.data() as Map<String,dynamic>)).toList();
+    }
+    logger.i("loadAllServiceByMasterUid: load empty.");
+    return [];
+  }
   Future<ServiceModel?> load(String serviceGuid) async {
     var docSnap = await _serviceCollection.doc(serviceGuid).get();
     if (docSnap.exists) {

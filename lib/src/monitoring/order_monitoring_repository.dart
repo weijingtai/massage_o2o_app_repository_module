@@ -176,8 +176,9 @@ class OrderMonitoringRepository {
       monitorDraftOrders(hostUid,monitorStreamController.sink,ignoreBeforeAt: ignoreBeforeAt),
       _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Creating, monitorStreamController.sink,ignoreBeforeAt: ignoreBeforeAt),
       _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Assigning, monitorStreamController.sink,ignoreBeforeAt: ignoreBeforeAt),
+      _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Waiting, monitorStreamController.sink,ignoreBeforeAt: ignoreBeforeAt),
       // monitorAssigningOrders(hostUid,monitorStreamController.sink,ignoreBeforeAt: ignoreBeforeAt),
-      monitorWaitingOrders(hostUid,monitorStreamController.sink,ignoreBeforeAt: ignoreBeforeAt),
+      // _monitorAppointmentOrders(hostUid,monitorStreamController.sink,ignoreBeforeAt: ignoreBeforeAt),
       monitorServingOrders(hostUid,monitorStreamController.sink,ignoreBeforeAt: ignoreBeforeAt),
     ];
     if (withArchived) {
@@ -194,7 +195,7 @@ class OrderMonitoringRepository {
     logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=Serving' collection");
     return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Serving, sink,ignoreBeforeAt: ignoreBeforeAt);
   }
-  Future<void> monitorWaitingOrders(String hostUid,StreamSink<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> sink,{DateTime? ignoreBeforeAt}){
+  Future<void> monitorAppointmentOrders(String hostUid,{DateTime? ignoreBeforeAt}){
     logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=Waiting' collection");
     return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Waiting, monitorAppointmentStreamController,ignoreBeforeAt: ignoreBeforeAt);
   }

@@ -26,6 +26,7 @@ class OrderMonitoringRepository {
   StreamController<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> monitorStreamController = StreamController.broadcast();
   StreamController<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> monitorCreatingStreamController = StreamController.broadcast();
   StreamController<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> monitorAssigningStreamController = StreamController.broadcast();
+  StreamController<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> monitorAppointmentStreamController = StreamController.broadcast();
 
 
   StreamController<Tuple2<OrderListUpdatedTypeEnum,OrderModel?>> singleOrderStreamController = StreamController.broadcast();
@@ -195,8 +196,9 @@ class OrderMonitoringRepository {
   }
   Future<void> monitorWaitingOrders(String hostUid,StreamSink<Tuple3<OrderListTypeEnum,OrderListUpdatedTypeEnum,OrderModel>> sink,{DateTime? ignoreBeforeAt}){
     logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=Waiting' collection");
-    return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Waiting, sink,ignoreBeforeAt: ignoreBeforeAt);
+    return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Waiting, monitorAppointmentStreamController,ignoreBeforeAt: ignoreBeforeAt);
   }
+
   Future<void> monitorAssigningOrders(String hostUid,{DateTime? ignoreBeforeAt}){
     logger.d("monitorCreatingOrders: start monitoring '/${activatedOrderCollection.path}/<HOST_UID>/${config.activatedSubCollectionName}?status=Assigning' collection");
     return _monitorActivatedOrderCollectionByStatus(hostUid, OrderStatusEnum.Assigning, monitorAssigningStreamController.sink,ignoreBeforeAt: ignoreBeforeAt);

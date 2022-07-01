@@ -338,14 +338,14 @@ class OrderRepository{
   }
 
   Future<List<OrderModel>> loadAppointmentOrders(String hostUid) async {
-    logger.i("load creating orders by hostUid:$hostUid");
+    logger.i("load waiting orders by hostUid:$hostUid");
     // if (displayedCreatingOrders.isEmpty){
       var dataSnap = await orderCollection
           .doc(hostUid)
-          .collection(ORDER_COLLECTION_NAME_APPOINTMENT)
+          .collection(config.activatedSubCollectionName)
           .get();
       // displayedCreatingOrders = dataSnap.docs.where((e) => e.exists).map((docSnap) => OrderModel.fromJson(docSnap.data())).toList();
-    return dataSnap.docs.where((e) => e.exists).map((docSnap) => OrderModel.fromJson(docSnap.data())).toList();
+    return dataSnap.docs.where((e) => e.exists).map((docSnap) => OrderModel.fromJson(docSnap.data())).where((e) => e.status == OrderStatusEnum.Waiting).toList();
     // }
 
     // return displayedCreatingOrders;

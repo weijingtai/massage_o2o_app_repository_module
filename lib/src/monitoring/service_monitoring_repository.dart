@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
+import 'package:massage_o2o_app_models_module/enums.dart';
 import 'package:massage_o2o_app_models_module/models.dart';
 import 'package:massage_o2o_app_repository_module/src/enums/service_changed_type_enum.dart';
 import 'package:tuple/tuple.dart';
@@ -74,11 +75,16 @@ class ServiceMonitoringRepository {
     _monitoringOrderGuids.add(orderGuid);
   }
 
-  Future<void> monitorServiceListByMasterUid(String masterUid,DateTime startAt,{DateTime? ignoreCreatedAtBefore}) async{
+  Future<void> monitorServiceListByMasterUid(String masterUid,DateTime afterDoneAt,{DateTime? ignoreCreatedAtBefore}) async{
     logger.i("monitorServiceListByMasterUid: Monitoring for masterUid: $masterUid and ignoreCreatedAtBefore: $ignoreCreatedAtBefore");
+    // var whereNotInList =[
+    //   ServiceStateEnum.NoMasterSelected.name,
+    //   ServiceStateEnum.Preparing.name,
+    //   ServiceStateEnum.Assigning.name];
+    // .where("state",whereNotIn: whereNotInList)
     serviceGroupCollection.where('masterUid',isEqualTo: masterUid)
-        .orderBy("createdAt")
-        .startAfter([startAt])
+        .orderBy("doneAt",descending: true)
+        .startAfter([afterDoneAt])
         .snapshots()
         .listen((event) {
       for (var changedData in event.docChanges) {

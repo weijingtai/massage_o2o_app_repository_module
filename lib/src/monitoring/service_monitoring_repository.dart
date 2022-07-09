@@ -47,7 +47,7 @@ class ServiceMonitoringRepository {
         if (changedData.doc.exists){
           // convert to model
           ServiceModel serviceModel = ServiceModel.fromJson(changedData.doc.data()!);
-          logger.v("monitorServiceByOrderGuid: ${changedData.type.name} ${serviceModel.toJson()}");
+          logger.v("monitorServiceListByOrderGuid: ${changedData.type.name} ${serviceModel.toJson()}");
           // handle changedType by changedData.type with switch-case
           switch (changedData.type) {
             case DocumentChangeType.added:
@@ -55,7 +55,7 @@ class ServiceMonitoringRepository {
               if (ignoreCreatedAtBefore == null || serviceModel.createdAt.isAfter(ignoreCreatedAtBefore)){
                 orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.ADDED,orderGuid,serviceModel));
               }else{
-                logger.d("monitorServiceByOrderGuid: ignore ${serviceModel.guid} which createdAt is before ignoreCreatedAtBefore");
+                logger.d("monitorServiceListByOrderGuid: ignore ${serviceModel.guid} which createdAt is before ignoreCreatedAtBefore");
               }
               break;
             case DocumentChangeType.modified:
@@ -67,10 +67,49 @@ class ServiceMonitoringRepository {
           }
         }
         else{
-          logger.w("monitorServiceByOrderGuid: service not found");
+          logger.w("monitorServiceListByOrderGuid: service not found");
         }
       }
     });
     _monitoringOrderGuids.add(orderGuid);
+  }
+
+  Future<void> monitorServiceListByMasterUid(String masterUid,DateTime startAt,{DateTime? ignoreCreatedAtBefore}) async{
+    logger.i("monitorServiceListByMasterUid: Monitoring for masterUid: $masterUid and ignoreCreatedAtBefore: $ignoreCreatedAtBefore");
+    serviceGroupCollection.where('masterUid',isEqualTo: masterUid)
+        .orderBy("createdAt")
+        .startAfter([startAt])
+        .snapshots()
+        .listen((event) {
+      for (var changedData in event.docChanges) {
+        if (changedData.doc.exists){
+          // convert to model
+          ServiceModel serviceModel = ServiceModel.fromJson(changedData.doc.data()!);
+          logger.v("monitorServiceListByMasterUid: ${changedData.type.name} ${serviceModel.toJson()}");
+          // handle changedType by changedData.type with switch-case
+          switch (changedData.type) {
+            case DocumentChangeType.added:
+              _monitoringOrderGuids.add(serviceModel.orderGuid);
+            // only handle if createdAt is after ignoreCreatedAtBefore
+              if (ignoreCreatedAtBefore == null || serviceModel.createdAt.isAfter(ignoreCreatedAtBefore)){
+                orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.ADDED,serviceModel.orderGuid,serviceModel));
+              }else{
+                logger.d("monitorServiceListByMasterUid: ignore ${serviceModel.guid} which createdAt is before ignoreCreatedAtBefore");
+              }
+              break;
+            case DocumentChangeType.modified:
+              orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.CHANGED,serviceModel.orderGuid,serviceModel));
+              break;
+            case DocumentChangeType.removed:
+              _monitoringOrderGuids.remove(serviceModel.orderGuid);
+              orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.REMOVED,serviceModel.orderGuid,serviceModel));
+              break;
+          }
+        }
+        else{
+          logger.w("monitorServiceListByMasterUid: service not found");
+        }
+      }
+    });
   }
 }

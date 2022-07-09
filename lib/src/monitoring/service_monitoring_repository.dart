@@ -83,6 +83,39 @@ class ServiceMonitoringRepository {
     //   ServiceStateEnum.Assigning.name];
     // .where("state",whereNotIn: whereNotInList)
     serviceGroupCollection.where('masterUid',isEqualTo: masterUid)
+        .snapshots()
+        .listen((event) {
+      for (var changedData in event.docChanges) {
+        if (changedData.doc.exists){
+          // convert to model
+          ServiceModel serviceModel = ServiceModel.fromJson(changedData.doc.data()!);
+          logger.v("monitorServiceListByMasterUid: ${changedData.type.name} ${serviceModel.toJson()}");
+          // handle changedType by changedData.type with switch-case
+          switch (changedData.type) {
+            case DocumentChangeType.added:
+              _monitoringOrderGuids.add(serviceModel.orderGuid);
+              // only handle if createdAt is after ignoreCreatedAtBefore
+              if (ignoreCreatedAtBefore == null || serviceModel.createdAt.isAfter(ignoreCreatedAtBefore)){
+                orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.ADDED,serviceModel.orderGuid,serviceModel));
+              }else{
+                logger.d("monitorServiceListByMasterUid: ignore ${serviceModel.guid} which createdAt is before ignoreCreatedAtBefore");
+              }
+              break;
+            case DocumentChangeType.modified:
+              orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.CHANGED,serviceModel.orderGuid,serviceModel));
+              break;
+            case DocumentChangeType.removed:
+              _monitoringOrderGuids.remove(serviceModel.orderGuid);
+              orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.REMOVED,serviceModel.orderGuid,serviceModel));
+              break;
+          }
+        }
+        else{
+          logger.w("monitorServiceListByMasterUid: service not found");
+        }
+      }
+    });
+    serviceGroupCollection.where('masterUid',isEqualTo: masterUid)
         .orderBy("doneAt",descending: true)
         .startAfter([afterDoneAt])
         .snapshots()

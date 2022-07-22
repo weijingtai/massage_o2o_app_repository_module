@@ -18,30 +18,47 @@ class ServiceMonitoringRepository {
 
   // Tuple3.item2: order guid
   StreamController<Tuple3<ServiceChangedTypeEnum,String,ServiceModel>> orderServiceStreamController = StreamController.broadcast();
-  final List<String> _monitoringOrderGuids = [];
+  final Map<String,StreamSubscription> _monitoringOrderGuids = {};
+  final Map<String,StreamSubscription> _monitoringServiceGuids = {};
+  final Map<String,StreamSubscription> _monitoringMasterUid = {};
   ServiceMonitoringRepository();
 
   Future<void> monitorSingleService(String hostUid, String orderGuid, String serviceGuid) async {
-    if (_monitoringOrderGuids.contains(serviceGuid)) {
+    if (_monitoringServiceGuids.containsKey(serviceGuid)) {
       return;
     }
-    serviceCollection.doc(hostUid).collection(orderGuid).doc(serviceGuid).snapshots().listen((snapshot) {
+    _monitoringServiceGuids[serviceGuid] = serviceCollection
+        .doc(hostUid)
+        .collection(orderGuid)
+        .doc(serviceGuid)
+        .snapshots().listen((snapshot) {
       if (snapshot.exists) {
         logger.v(snapshot.data());
         ServiceModel serviceModel = ServiceModel.fromJson(snapshot.data() as Map<String, dynamic>);
         orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.CHANGED, orderGuid, serviceModel));
       }
     });
-    _monitoringOrderGuids.add(serviceGuid);
   }
 
+  Future<void> monitorAllServiceByOrderGuidList(List<String> orderGuidList,{DateTime? ignoreAddBeforeItCreated})async {
+    var notMonitoringOrderGuid = orderGuidList.toSet().difference(_monitoringOrderGuids.keys.toSet());
+    if (notMonitoringOrderGuid.isNotEmpty){
+      logger.d("monitorAllServiceByOrderGuidList: total:${notMonitoringOrderGuid.length} is not monitoring.");
+      logger.v(notMonitoringOrderGuid);
+      for (var orderGuid in notMonitoringOrderGuid) {
+        monitorServiceListByOrderGuid(orderGuid,ignoreCreatedAtBefore: ignoreAddBeforeItCreated);
+      }
+    }else{
+      logger.d("monitorAllServiceByOrderGuidList: total:${orderGuidList.length - notMonitoringOrderGuid.length} is monitoring.");
+    }
+  }
   Future<void> monitorServiceListByOrderGuid(String orderGuid,{DateTime? ignoreCreatedAtBefore}) async {
-    if (_monitoringOrderGuids.contains(orderGuid)) {
+    if (_monitoringOrderGuids.containsKey(orderGuid)) {
       logger.i("monitorServiceListByOrderGuid: Already monitoring order guid: $orderGuid");
       return;
     }
     logger.i("monitorServiceListByOrderGuid: Monitoring order guid: $orderGuid and ignoreCreatedAtBefore: $ignoreCreatedAtBefore");
-    serviceGroupCollection.where('orderGuid',isEqualTo: orderGuid)
+    _monitoringOrderGuids[orderGuid] = serviceGroupCollection.where('orderGuid',isEqualTo: orderGuid)
         .snapshots()
         .listen((event) {
       for (var changedData in event.docChanges) {
@@ -64,6 +81,13 @@ class ServiceMonitoringRepository {
               break;
             case DocumentChangeType.removed:
               orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.REMOVED,orderGuid,serviceModel));
+              if (_monitoringOrderGuids.containsKey(orderGuid)){
+                _monitoringOrderGuids[orderGuid]?.cancel();
+                _monitoringOrderGuids.remove(orderGuid);
+              }else{
+                logger.w("monitorServiceListByOrderGuid: orderGuid: $orderGuid not found in monitoringOrderGuid");
+              }
+
               break;
           }
         }
@@ -72,9 +96,7 @@ class ServiceMonitoringRepository {
         }
       }
     });
-    _monitoringOrderGuids.add(orderGuid);
   }
-
   Future<void> monitorServiceListByMasterUid(String masterUid,DateTime afterDoneAt,{DateTime? ignoreCreatedAtBefore}) async{
     logger.i("monitorServiceListByMasterUid: Monitoring for masterUid: $masterUid and ignoreCreatedAtBefore: $ignoreCreatedAtBefore");
     // var whereNotInList =[
@@ -82,7 +104,7 @@ class ServiceMonitoringRepository {
     //   ServiceStateEnum.Preparing.name,
     //   ServiceStateEnum.Assigning.name];
     // .where("state",whereNotIn: whereNotInList)
-    serviceGroupCollection.where('masterUid',isEqualTo: masterUid)
+    _monitoringMasterUid[masterUid] = serviceGroupCollection.where('masterUid',isEqualTo: masterUid)
         .snapshots()
         .listen((event) {
       for (var changedData in event.docChanges) {
@@ -93,7 +115,6 @@ class ServiceMonitoringRepository {
           // handle changedType by changedData.type with switch-case
           switch (changedData.type) {
             case DocumentChangeType.added:
-              _monitoringOrderGuids.add(serviceModel.orderGuid);
               // only handle if createdAt is after ignoreCreatedAtBefore
               if (ignoreCreatedAtBefore == null || serviceModel.createdAt.isAfter(ignoreCreatedAtBefore)){
                 orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.ADDED,serviceModel.orderGuid,serviceModel));
@@ -105,8 +126,13 @@ class ServiceMonitoringRepository {
               orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.CHANGED,serviceModel.orderGuid,serviceModel));
               break;
             case DocumentChangeType.removed:
-              _monitoringOrderGuids.remove(serviceModel.orderGuid);
-              orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.REMOVED,serviceModel.orderGuid,serviceModel));
+              if (_monitoringMasterUid.containsKey(masterUid)){
+                _monitoringMasterUid[masterUid]?.cancel();
+                _monitoringMasterUid.remove(masterUid);
+              }else{
+                logger.w("monitorServiceListByMasterUid: masterUid: $masterUid not found in monitoringMasterUid");
+              }
+
               break;
           }
         }
@@ -115,7 +141,7 @@ class ServiceMonitoringRepository {
         }
       }
     });
-    serviceGroupCollection.where('masterUid',isEqualTo: masterUid)
+    _monitoringMasterUid[masterUid] = serviceGroupCollection.where('masterUid',isEqualTo: masterUid)
         .orderBy("doneAt",descending: true)
         .startAfter([afterDoneAt])
         .snapshots()
@@ -128,7 +154,6 @@ class ServiceMonitoringRepository {
           // handle changedType by changedData.type with switch-case
           switch (changedData.type) {
             case DocumentChangeType.added:
-              _monitoringOrderGuids.add(serviceModel.orderGuid);
             // only handle if createdAt is after ignoreCreatedAtBefore
               if (ignoreCreatedAtBefore == null || serviceModel.createdAt.isAfter(ignoreCreatedAtBefore)){
                 orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.ADDED,serviceModel.orderGuid,serviceModel));
@@ -140,7 +165,12 @@ class ServiceMonitoringRepository {
               orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.CHANGED,serviceModel.orderGuid,serviceModel));
               break;
             case DocumentChangeType.removed:
-              _monitoringOrderGuids.remove(serviceModel.orderGuid);
+              if (_monitoringMasterUid.containsKey(masterUid)){
+                _monitoringMasterUid[masterUid]?.cancel();
+                _monitoringMasterUid.remove(masterUid);
+              }else{
+                logger.w("monitorServiceListByMasterUid: masterUid: $masterUid not found in monitoringMasterUid");
+              }
               orderServiceStreamController.add(Tuple3(ServiceChangedTypeEnum.REMOVED,serviceModel.orderGuid,serviceModel));
               break;
           }

@@ -95,7 +95,7 @@ class ServiceRepository {
   Future<List<ServiceModel>> loadAllServiceByMasterUid(String masterUid,{DateTime? startAt,DateTime? endAt}) async {
     logger.i("loadAllServiceByMasterUid: masterUid: $masterUid");
     var query = _serviceCollection
-        .where("masterUid",isEqualTo: masterUid)
+        .where("assignedMasterUid",isEqualTo: masterUid)
         .orderBy("createdAt",descending: false);
     if (startAt != null){
       logger.d("loadAllServiceByMasterUid: with startAt: $startAt");
@@ -285,7 +285,7 @@ class ServiceRepository {
     logger.i("updateService: service:$serviceGuid");
     await _serviceCollection
         .doc(serviceGuid)
-        .update({"assign": FieldValue.delete(),"masterUid":FieldValue.delete()});
+        .update({"assign": FieldValue.delete(),"assignedMasterUid":FieldValue.delete()});
   }
 
   Future<void> updateServiceList(List<ServiceModel> newServiceList) async {

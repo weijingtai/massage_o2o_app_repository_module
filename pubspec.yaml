@@ -13,11 +13,12 @@ dependencies:
   tuple: ^2.0.0
   intl: ^0.17.0
   logger: ^1.1.0
-  firebase_core: ^1.12.0
-  cloud_firestore: ^3.1.8
-  json_annotation: ^4.5.0
-  meta: ^1.7.0
-
+  firebase_core: ^2.1.1
+  cloud_firestore: ^4.0.4
+  json_annotation: ^4.7.0
+  meta: ^1.7.1
+  dio: ^4.0.6
+  either_dart: ^0.3.0
 
   massage_o2o_app_models_module:
     git:
@@ -31,11 +32,12 @@ dev_dependencies:
     sdk: flutter
   mockito: 5.2.0
   build_runner: ^2.1.11
-  json_annotation: ^4.5.0
-  json_serializable: ^6.2.0
+  json_annotation: ^4.7.0
+  json_serializable: ^6.5.4
   flutter_lints: ^2.0.0
-  fake_cloud_firestore: ^1.2.2
+  fake_cloud_firestore: ^2.0.1
   uuid: ^3.0.6
+  firebase_auth: ^4.1.1
 
 
 

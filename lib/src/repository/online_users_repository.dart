@@ -62,7 +62,13 @@ class OnlineUsersRepository {
           .where((snapshot) => snapshot.exists)
           .toList();
     }
-    logger.v(
+    // foreach logging reuslt only when verbose logging.
+    if (Logger.level == Level.verbose) {
+      allOnlineFriendsSnapshotList.forEach((snapshot) {
+        logger.v("snapshot ${snapshot.data()}");
+      });
+    }
+    logger.d(
         "allOnlineFriendsSnapshotList: ${allOnlineFriendsSnapshotList.length}");
     return allOnlineFriendsSnapshotList
         .where((e) => e.exists)

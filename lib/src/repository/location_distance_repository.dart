@@ -38,11 +38,9 @@ class HttpLocationDistanceRepository extends LocationDistanceRepository {
           await Future.wait(lists.map((each) => _makeRequest(current, each)));
 
       // convert multiple result to single list
-      allResult
-          .where((element) => element.isRight)
-          .map((e) => e.right)
-          .forEach((element) {
-        result.addAll(element);
+      allResult.where((e) => e.isRight).map((e) => e.right).forEach((e) {
+        logger.v(jsonEncode(e));
+        result.addAll(e);
       });
     } else {
       var requestResult = await _makeRequest(current, others);

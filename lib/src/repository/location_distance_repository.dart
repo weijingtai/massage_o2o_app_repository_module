@@ -38,6 +38,7 @@ class HttpLocationDistanceRepository extends LocationDistanceRepository {
           await Future.wait(lists.map((each) => _makeRequest(current, each)));
       allResult.forEach((e) {
         if (e.isRight) {
+          logger.v(jsonEncode(e.right));
           result.addAll(e.right);
         } else {
           logger.w("getAllDistance request error ${e.left}");

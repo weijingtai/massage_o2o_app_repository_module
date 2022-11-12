@@ -8,5 +8,5 @@ export 'src/repository/order_repository.dart';
 export 'src/repository/service_repository.dart';
 export 'src/repository/user_repository.dart';
 
-
-
+export 'src/repository/nearby_user_repository.dart';
+export 'src/repository/location_distance_repository.dart';

@@ -153,6 +153,7 @@ class HttpLocationDistanceRepository extends LocationDistanceRepository {
         return const Left(LocationDistanceError.tryAgainLater);
       }
     } catch (e) {
+      logger.e("_makeRequest: error ${e.toString()}");
       return const Left(LocationDistanceError.tryAgainLater);
     }
   }

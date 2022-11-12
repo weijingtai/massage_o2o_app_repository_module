@@ -36,12 +36,20 @@ class HttpLocationDistanceRepository extends LocationDistanceRepository {
       var lists = partition(others, maxPointsEachRequest);
       var allResult =
           await Future.wait(lists.map((each) => _makeRequest(current, each)));
+      allResult.forEach((e) {
+        if (e.isRight) {
+          result.addAll(e.right);
+        } else {
+          logger.w("getAllDistance request error ${e.left}");
+        }
+      });
 
       // convert multiple result to single list
-      allResult.where((e) => e.isRight).map((e) => e.right).forEach((e) {
-        logger.v(jsonEncode(e));
-        result.addAll(e);
-      });
+      // allResult.where((e) => e.isRight).map((e) => e.right).forEach((e) {
+      //   logger.v(jsonEncode(e));
+      //   // add to result
+      //   result.addAll(e);
+      // });
     } else {
       var requestResult = await _makeRequest(current, others);
       if (requestResult.isRight) {

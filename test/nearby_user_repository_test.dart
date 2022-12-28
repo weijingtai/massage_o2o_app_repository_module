@@ -39,6 +39,37 @@ Future<void> main() async {
     });
   });
 
+  group('nearby friends', () {
+    test("get 1 host and 4 masters range", () async {
+      try {
+        Either<NearbyFriendsError, Map<String, int>> result =
+            await nearbyUserRepository
+                .listFriendsMasterDistance(currentToken, hostUidList: [
+          "iLTOuybqxXc4tW6nKZ0hB1m4zuqF"
+        ], masterUidList: [
+          "ZyQsx63oi1wv5QHCSKfOT8r1paXa",
+          "oVq9WTbyL80hdUSncX6qcU2uKE6J",
+          "RPOABnM4r4hFEBxeHIvg2VAul7uG",
+          "oBt8PQ0CFBe2lkmaXkqGB08JFKz8"
+        ]);
+        expect(result.isRight, isTrue);
+        expect(result.isLeft, isFalse);
+        expect(result.right.length, equals(5));
+        expect(
+            result.right,
+            equals({
+              "ZyQsx63oi1wv5QHCSKfOT8r1paXa": 1051,
+              "oVq9WTbyL80hdUSncX6qcU2uKE6J": 2232,
+              "RPOABnM4r4hFEBxeHIvg2VAul7uG": 1830,
+              "oBt8PQ0CFBe2lkmaXkqGB08JFKz8": 2145,
+              "iLTOuybqxXc4tW6nKZ0hB1m4zuqF": 544
+            }));
+      } catch (e) {
+        expect(e, isNull);
+      }
+    });
+  });
+
   // FirebaseFirestore firebaseFirestore = FirebaseFirestore.instanceFor(app:app);
   // firebaseFirestore.useFirestoreEmulator("192.168.0.64", 8080);
   // var remoteAssignRepository = AssignRepository(firebaseFirestore);

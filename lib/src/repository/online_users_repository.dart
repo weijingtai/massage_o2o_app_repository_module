@@ -20,7 +20,7 @@ class OnlineUsersRepository {
     }
 
     logger.i("fetchOnlineHost by uid list.");
-    var remoteOnlineHostUserModelList = await _fetchOnlineHost(allUids);
+    var remoteOnlineHostUserModelList = await fetchOnlineHost(allUids);
     if (remoteOnlineHostUserModelList.isEmpty) {
       logger.i("there are no host users online. for current user.");
       return Future.value(<OnlineHostUserModel>[]);
@@ -28,7 +28,7 @@ class OnlineUsersRepository {
     return remoteOnlineHostUserModelList;
   }
 
-  Future<List<OnlineHostUserModel>> _fetchOnlineHost(List<String> uids) async {
+  Future<List<OnlineHostUserModel>> fetchOnlineHost(List<String> uids) async {
     var queryTimes = uids.length ~/ 10;
     if (uids.length % 10 != 0) {
       queryTimes++;
@@ -89,7 +89,7 @@ class OnlineUsersRepository {
 
     logger.i("fetchOnlineMaster by uid list.");
     var remoteOnlineMasterUserModelList =
-        await _fetchOnlineMaster(uidSubMapper.keys.toList());
+        await fetchOnlineMaster(uidSubMapper.keys.toList());
     if (remoteOnlineMasterUserModelList.isEmpty) {
       logger.i("there are no master users online. for current user.");
       return Future.value(<OnlineMasterUserModel>[]);
@@ -98,7 +98,7 @@ class OnlineUsersRepository {
   }
 
   // Future<List<OnlineH>>
-  Future<List<OnlineMasterUserModel>> _fetchOnlineMaster(
+  Future<List<OnlineMasterUserModel>> fetchOnlineMaster(
       List<String> uids) async {
     logger.d("load total ${uids.length} friends' uid.");
     var queryTimes = uids.length ~/ 10;

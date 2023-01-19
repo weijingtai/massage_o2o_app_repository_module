@@ -9,7 +9,7 @@ import 'package:quiver/iterables.dart';
 
 abstract class LocationDistanceRepository {
   Future<Either<LocationDistanceError, Map<String, DistanceModel>>>
-      getAllDistance(Coordinate current, List<MasterLocationModel> others);
+      getAllDistance(Coordinate current, List<UserLocationModel> others);
 }
 
 class HttpLocationDistanceRepository extends LocationDistanceRepository {
@@ -22,8 +22,7 @@ class HttpLocationDistanceRepository extends LocationDistanceRepository {
       : super();
   @override
   Future<Either<LocationDistanceError, Map<String, DistanceModel>>>
-      getAllDistance(
-          Coordinate current, List<MasterLocationModel> others) async {
+      getAllDistance(Coordinate current, List<UserLocationModel> others) async {
     if (others.isEmpty) {
       return const Left(LocationDistanceError.empty);
     }
@@ -65,9 +64,9 @@ class HttpLocationDistanceRepository extends LocationDistanceRepository {
   }
 
   Future<Either<LocationDistanceError, Map<String, DistanceModel>>>
-      _makeRequest(Coordinate current, List<MasterLocationModel> others) async {
+      _makeRequest(Coordinate current, List<UserLocationModel> others) async {
     // convert to mapper
-    Map<String, MasterLocationModel> mapper = {for (var v in others) v.uid: v};
+    Map<String, UserLocationModel> mapper = {for (var v in others) v.uid: v};
     // convert MasterLocationModel to Map<String, dynamic>
     final List<Map<String, dynamic>> othersMap = others
         .map((e) => {

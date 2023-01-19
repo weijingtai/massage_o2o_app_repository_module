@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  quiver: ^3.1.0  # dart's common-lang
+  quiver: ^3.2.1  # dart's common-lang
   tuple: ^2.0.1
   intl: ^0.17.0
   logger: ^1.1.0

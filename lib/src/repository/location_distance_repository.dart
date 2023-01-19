@@ -108,7 +108,7 @@ class HttpLocationDistanceRepository extends LocationDistanceRepository {
             logger.d("_makeRequest: total ${resultData.length} masters.");
             // setup result list
             for (var each in resultData) {
-              MasterLocationModel master = mapper[each['uid']]!;
+              UserLocationModel master = mapper[each['uid']]!;
               double? rangeDistance;
               String? rangeDistanceUnit;
 

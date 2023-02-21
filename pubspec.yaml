@@ -13,11 +13,11 @@ dependencies:
   tuple: ^2.0.1
   intl: ^0.17.0
   logger: ^1.1.0
-  firebase_core: ^2.1.1
-  cloud_firestore: ^4.0.4
+  firebase_core: ^2.6.1
+  cloud_firestore: ^4.4.2
   json_annotation: ^4.7.0
   meta: ^1.8.0
-  dio: ^4.0.6
+  dio: ^5.0.0
   either_dart: ^0.3.0
 
   massage_o2o_app_models_module:
